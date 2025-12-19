@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fulltrack - Reportes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        /* Estilos personalizados para Scrollbar */
+        ::-webkit-scrollbar {
+            height: 10px;
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; /* cool-gray-300 */
+            border-radius: 8px;
+            border: 2px solid #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; /* cool-gray-400 */
+        }
+        
+        /* Estilos para tablas */
+        th, td {
+            transition: all 0.2s;
+            border-color: #e2e8f0; /* slate-200 */
+        }
+        tr:hover td {
+            filter: brightness(0.95); /* Efecto hover sutil */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans text-gray-800">
+
+    <header class="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6 shadow-lg">
+        <div class="container mx-auto">
+            <h1 class="text-3xl font-extrabold tracking-tight">Fulltrack - Reportes</h1>
+            <p class="text-slate-300 mt-2 text-sm opacity-90">Sistema Integral de Consolidación de Combustible - GRUPO AMALGAMA</p>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-6 lg:p-8 max-w-[100vw] overflow-hidden">
+        
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="border-b border-gray-200 bg-gray-50 overflow-x-auto">
+                <nav class="flex -mb-px" aria-label="Tabs">
+                    <button id="tab-consolidated" onclick="switchTab('consolidated')" class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm text-blue-600 border-blue-600 hover:bg-blue-50 transition-colors focus:outline-none">
+                        📊 Consolidado General
+                    </button>
+                    <button id="tab-report" onclick="switchTab('report')" class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 hover:bg-gray-100 transition-colors focus:outline-none">
+                        🚛 Reporte Diesel (ECM)
+                    </button>
+                    <button id="tab-tablet" onclick="switchTab('tablet')" class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 hover:bg-gray-100 transition-colors focus:outline-none">
+                        📱 Reporte Tableta
+                    </button>
+                    <button id="tab-upload" onclick="switchTab('upload')" class="whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300 hover:bg-gray-100 transition-colors focus:outline-none">
+                        📂 Carga de Archivos
+                    </button>
+                </nav>
+            </div>
+
+            <div id="panel-consolidated" class="p-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Reporte Consolidado</h2>
+                        <p class="text-sm text-gray-500 mt-1">Cruce de información entre ECM y Cargas Manuales</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex items-center gap-3">
+                        <span id="consolidated-report-count" class="text-sm font-medium text-gray-600 bg-gray-100 px-3 py-1 rounded-full">Cargando...</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-end">
+                    <div class="w-full md:w-auto">
+                        <label for="filter-month-consolidated" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Mes</label>
+                        <input type="month" id="filter-month-consolidated" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    </div>
+                    <div class="w-full md:w-auto flex-grow max-w-md">
+                        <label for="filter-unit-consolidated" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unidad</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <span class="text-gray-400">🔍</span>
+                            </div>
+                            <input type="text" id="filter-unit-consolidated" placeholder="Ej. 105, 204..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 pl-10">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-filter-consolidated" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition shadow-sm">
+                            Filtrar
+                        </button>
+                        <button id="btn-clear-consolidated" class="bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm border border-gray-300 transition shadow-sm">
+                            Limpiar
+                        </button>
+                        <button onclick="downloadXLS('consolidated')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition shadow-sm flex items-center gap-2 ml-2">
+                            <span>📥</span> Exportar
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto rounded-lg border border-gray-300 shadow-inner max-h-[70vh]">
+                    <table class="min-w-full divide-y divide-gray-300 text-xs border-collapse">
+                        <thead class="sticky top-0 z-10 shadow-sm"> 
+                            <tr>
+                                <th class="px-3 py-3 text-left font-bold text-gray-900 bg-gray-300 border-r border-gray-400">ID Diesel</th>
+                                <th class="px-3 py-3 text-left font-bold text-gray-700 bg-gray-100 border-r">Conciliado</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Unidad</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Operador</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Fecha</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Hora</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Bitácora</th>
+                                
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Distancia (ECM)</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">KM HUBODOMETRO</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">KM Recorrido</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">KM Recorridos (T)</th>
+                                
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Litros Diesel</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">En Vales</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">Total Diesel</th>
+
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Combustible Viaje</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">Rendimiento</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Rendimiento (ECM)</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">DISTANCIA (ECM)</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Litros Urea</th>
+                                
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">% DIF KILOMETROS</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">% DIF LITROS</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">DIF LITROS</th>
+
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo del viaje</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo en ralentí</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">Idle Total</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">% Idle Stop</th>
+
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Dist. Top Gear</th>
+                                <th class="px-3 py-3 text-left font-bold text-green-900 bg-green-100 border-r border-green-200">% TOP GEAR</th>
+
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Eventos Frenado</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">RPM Máxima</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Factor Carga</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">DEF Usado</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Travesia KM</th>
+
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Dist. Cambio Bajo</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Comb. Manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Comb. Ralentí</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo Top Gear</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo Crucero</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo Exceso Vel</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Vel. Máxima</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Vel. Promedio</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Rend. Manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Eventos Exceso Vel</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo Neutro</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Tiempo PTO</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-r">Comb. PTO</th>
+                                
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">ID Tableta</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Compañía</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Unidad (T)</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">Fecha (T)</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">KM Inicio</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-r">KM Fin</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100">Totalizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="consolidatedTableBody" class="divide-y divide-gray-200 bg-white">
+                            <tr><td colspan="55" class="text-center p-10 text-gray-500">
+                                <div class="flex flex-col items-center justify-center">
+                                    <span class="text-2xl mb-2">⏳</span>
+                                    <p>Cargando datos del servidor...</p>
+                                </div>
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-report" class="hidden p-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Reporte Diesel (ECM)</h2>
+                        <p class="text-sm text-gray-500 mt-1">Datos extraídos directamente de la computadora de viaje</p>
+                    </div>
+                    <p id="report-count" class="text-sm font-medium text-gray-600">Cargando...</p>
+                </div>
+
+                <div class="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-end">
+                    <div class="w-full md:w-auto">
+                        <label for="filter-month-report" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Mes</label>
+                        <input type="month" id="filter-month-report" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label for="filter-unit-report" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unidad</label>
+                        <input type="text" id="filter-unit-report" placeholder="Buscar..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-filter-report" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition">Filtrar</button>
+                        <button id="btn-clear-report" class="bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm border border-gray-300 transition">Limpiar</button>
+                        <button onclick="downloadXLS('diesel')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition flex items-center gap-2"><span>📥</span> XLS</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-blue-500">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase">KM Totales</h4>
+                        <p id="kpi-total-km" class="text-2xl font-bold text-gray-800 mt-1">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 border-l-4 border-l-orange-500">
+                        <h4 class="text-xs font-bold text-gray-500 uppercase">Combustible Total</h4>
+                        <p id="kpi-total-fuel" class="text-2xl font-bold text-gray-800 mt-1">0 L</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-gray-300 shadow-inner max-h-[70vh]">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs">
+                        <thead class="bg-orange-50 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">ID</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Unidad</th>
+                                <th id="th-fecha-report" class="px-3 py-3 text-left font-bold text-orange-900 cursor-pointer hover:bg-orange-100">Fecha ↕</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Hora</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-x border-orange-200">KM HUBODOMETRO</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900 bg-orange-100 border-x border-orange-200">Travesia KM</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">KM Recorrido</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Combustible Viaje</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Distancia Conducida</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Dist. Top Gear</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Dist. Cambio Bajo</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Comb. Manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Comb. Ralentí</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">DEF Usado</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Viaje</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Ralentí</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Top Gear</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Crucero</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Tiempo Exc. Vel</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Vel. Máxima</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">RPM Máxima</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Vel. Promedio</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Rend. Viaje</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Rend. Manejando</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Factor Carga</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Eventos Exc. Vel</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Eventos Frenado</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">T. Neutro</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">T. PTO</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Comb. PTO</th>
+                                <th class="px-3 py-3 text-left font-bold text-orange-900">Archivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="divide-y divide-gray-200 bg-white">
+                            <tr><td colspan="32" class="text-center p-6 text-gray-500">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-tablet" class="hidden p-6">
+                <div class="flex flex-col md:flex-row justify-between md:items-center mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Reporte de Carga (Tableta)</h2>
+                        <p class="text-sm text-gray-500 mt-1">Registros manuales de carga de combustible</p>
+                    </div>
+                    <p id="tablet-report-count" class="text-sm font-medium text-gray-600">Cargando...</p>
+                </div>
+
+                <div class="flex flex-wrap gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200 items-end">
+                    <div class="w-full md:w-auto">
+                        <label for="filter-month-tablet" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Mes</label>
+                        <input type="month" id="filter-month-tablet" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    </div>
+                    <div class="w-full md:w-auto">
+                        <label for="filter-unit-tablet" class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Unidad</label>
+                        <input type="text" id="filter-unit-tablet" placeholder="Buscar..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-2 px-3">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button id="btn-filter-tablet" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition">Filtrar</button>
+                        <button id="btn-clear-tablet" class="bg-white hover:bg-gray-50 text-gray-700 font-semibold py-2 px-4 rounded-md text-sm border border-gray-300 transition">Limpiar</button>
+                        <button onclick="downloadXLS('tablet')" class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition flex items-center gap-2"><span>📥</span> XLS</button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-gray-300 shadow-inner max-h-[70vh]">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs">
+                        <thead class="bg-blue-50 sticky top-0 z-10"> 
+                            <tr>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">ID</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Compañía</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Unidad</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Fecha</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Operador</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Bitácora</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">KM Inicio</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">KM Fin</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">KM Recorridos</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Litros Diesel</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900 bg-blue-100 border-x border-blue-200">En Vales</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Litros Urea</th>
+                                <th class="px-3 py-3 text-left font-bold text-blue-900">Totalizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabletTableBody" class="divide-y divide-gray-200 bg-white">
+                            <tr><td colspan="13" class="text-center p-6 text-gray-500">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-upload" class="hidden p-6">
+                <div class="max-w-xl mx-auto bg-white p-8 rounded-xl shadow-lg border border-gray-100 mt-10">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Cargar Nuevo Reporte XML</h2>
+                    
+                    <form id="uploadForm" enctype="multipart/form-data" class="space-y-6">
+                        <div class="flex items-center justify-center w-full">
+                            <label for="file-upload" class="flex flex-col items-center justify-center w-full h-64 border-2 border-blue-300 border-dashed rounded-lg cursor-pointer bg-blue-50 hover:bg-blue-100 transition duration-300">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <svg class="w-10 h-10 mb-3 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                    <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Clic para subir</span> o arrastra el archivo aquí</p>
+                                    <p class="text-xs text-gray-500">Formato soportado: .XML (Cummins/Detroit)</p>
+                                </div>
+                                <input id="file-upload" name="xmlFile" type="file" accept=".xml" class="hidden" required />
+                            </label>
+                        </div> 
+
+                        <div id="file-name-display" class="text-center text-sm text-gray-700 font-medium h-5"></div>
+
+                        <button type="submit" class="w-full text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:ring-4 focus:ring-blue-300 font-bold rounded-lg text-sm px-5 py-3 text-center transition duration-200 shadow-md">
+                            Procesar Archivo
+                        </button>
+                    </form>
+                    <div id="upload-status" class="mt-6 text-center text-sm font-medium"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // VARIABLES Y CONFIGURACIÓN
+        // ==========================================
+        window.cachedDieselReports = [];
+        window.cachedTabletReports = [];
+        
+        // --- Estilos CSS en JS para uniformidad y elegancia ---
+        const STYLE_ID = 'px-3 py-2 whitespace-nowrap text-gray-800 bg-gray-200 font-bold border-r border-gray-300';
+        const STYLE_CONCILIADO = 'px-3 py-2 whitespace-nowrap text-center bg-white border-r border-gray-200';
+        const STYLE_XML = 'px-3 py-2 whitespace-nowrap text-gray-700 bg-orange-50 text-right border-r border-orange-100';
+        const STYLE_TABLET = 'px-3 py-2 whitespace-nowrap text-gray-700 bg-blue-50 text-right border-r border-blue-100';
+        const STYLE_CALC = 'px-3 py-2 whitespace-nowrap text-green-900 bg-green-50 font-bold text-right border-r border-green-200';
+
+        const fmt = (val) => {
+            if (val === null || val === undefined || val === 'N/D') return 'N/D';
+            const strVal = String(val).trim();
+            if (strVal === '') return 'N/D';
+            const clean = strVal.replace(/,/g, '');
+            const num = parseFloat(clean);
+            if (isNaN(num) || strVal.includes('/') || strVal.includes(':') || /[a-zA-Z]/.test(clean)) return val;
+            return num.toFixed(1); // 1 Decimal forzado para datos generales
+        };
+
+        // --- Tabs ---
+        const tabButtons = { consolidated: document.getElementById('tab-consolidated'), report: document.getElementById('tab-report'), tablet: document.getElementById('tab-tablet'), upload: document.getElementById('tab-upload') };
+        const tabPanels = { consolidated: document.getElementById('panel-consolidated'), report: document.getElementById('panel-report'), tablet: document.getElementById('panel-tablet'), upload: document.getElementById('panel-upload') };
+
+        function switchTab(tabId) {
+            Object.values(tabPanels).forEach(p => p.classList.add('hidden'));
+            Object.values(tabButtons).forEach(b => { b.classList.remove('text-blue-600', 'border-blue-600', 'bg-blue-50'); b.classList.add('text-gray-500', 'border-transparent'); });
+            tabPanels[tabId].classList.remove('hidden');
+            tabButtons[tabId].classList.remove('text-gray-500', 'border-transparent');
+            tabButtons[tabId].classList.add('text-blue-600', 'border-blue-600', 'bg-blue-50');
+        }
+
+        // --- Export ---
+        function downloadXLS(type) {
+            let data = [];
+            let name = "";
+            if(type==='consolidated') {
+                const table = document.querySelector("#panel-consolidated table");
+                if(table) XLSX.writeFile(XLSX.utils.table_to_book(table, {sheet:"Consolidado"}), `Consolidado_${new Date().toISOString().slice(0,10)}.xlsx`);
+                return;
+            }
+            if(type==='diesel') { data = window.cachedDieselReports; name = "Diesel"; }
+            if(type==='tablet') { data = window.cachedTabletReports; name = "Tableta"; }
+            if(data.length > 0) {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, name);
+                XLSX.writeFile(wb, `Reporte_${name}_${new Date().toISOString().slice(0,10)}.xlsx`);
+            } else { alert("No hay datos"); }
+        }
+
+        // ==========================================
+        // RENDERIZADO CONSOLIDADO (MAESTRO)
+        // ==========================================
+        function addConsolidatedRow(report) {
+            const row = document.getElementById('consolidatedTableBody').insertRow();
+            row.className = 'hover:bg-slate-50 transition-colors duration-150';
+
+            // 1. ID Diesel (System)
+            const c1 = row.insertCell(); c1.textContent = report.t1_id || 'N/D'; c1.className = STYLE_ID;
+            
+            // 2. Conciliado
+            const c2 = row.insertCell(); 
+            c2.innerHTML = (report.conciliado == 1) ? '<span class="text-green-600 font-bold">✓</span>' : '<span class="text-red-400 font-bold">✕</span>';
+            c2.className = STYLE_CONCILIADO;
+
+            // 3-7 Identificación
+            // 3. Unidad (Edit Logic Included)
+            const c3 = row.insertCell(); 
+            let unitHtml = report.unit_number || 'N/D';
+            if (unitHtml === 'PENDIENTE' || unitHtml === 'N/D') {
+                unitHtml = `<div class="flex items-center gap-1"><span class="text-red-600 font-bold text-xs">PENDIENTE</span><button onclick="editUnit(${report.t1_id})" class="text-xs bg-blue-100 text-blue-700 px-1 rounded hover:bg-blue-200">✎</button></div>`;
+                c3.innerHTML = unitHtml;
+            } else {
+                c3.textContent = unitHtml;
+            }
+            c3.className = STYLE_XML + ' font-bold text-gray-900';
+
+            const c4 = row.insertCell(); c4.textContent = report.t2_operator_name || 'N/D'; c4.className = STYLE_TABLET + ' text-left text-xs';
+            const c5 = row.insertCell(); c5.textContent = report.t1_report_date || 'N/D'; c5.className = STYLE_XML;
+            const c6 = row.insertCell(); c6.textContent = report.t1_report_time || 'N/D'; c6.className = STYLE_XML;
+            const c7 = row.insertCell(); c7.textContent = report.bitacora_number || 'N/D'; c7.className = STYLE_TABLET;
+
+            // 8-11 Kilometrajes
+            const c8 = row.insertCell(); c8.textContent = fmt(report.distancia_conducida); c8.className = STYLE_XML;
+            const c9 = row.insertCell(); c9.textContent = fmt(report.km_hubodometro); c9.className = STYLE_XML;
+            const c10 = row.insertCell(); c10.textContent = fmt(report.km_recorrido); c10.className = STYLE_XML;
+            const c11 = row.insertCell(); c11.textContent = fmt(report.km_recorridos); c11.className = STYLE_TABLET;
+
+            // 12-14 Litros
+            const c12 = row.insertCell(); c12.textContent = fmt(report.litros_diesel); c12.className = STYLE_TABLET;
+            const c13 = row.insertCell(); c13.textContent = fmt(report.litros_auto); c13.className = STYLE_TABLET;
+            // Total Diesel (Calc)
+            const cellTotalD = row.insertCell();
+            const lDiesel = parseFloat(String(report.litros_diesel||0).replace(/,/g,'')) || 0;
+            const lAuto = parseFloat(String(report.litros_auto||0).replace(/,/g,'')) || 0;
+            const totalDieselVal = lDiesel + lAuto;
+            cellTotalD.textContent = totalDieselVal.toFixed(1);
+            cellTotalD.className = STYLE_CALC;
+
+            // 15 Comb Viaje
+            const c15 = row.insertCell(); c15.textContent = fmt(report.combustible_viaje); c15.className = STYLE_XML;
+
+            // 16 Rendimiento (Calc)
+            const cellRend = row.insertCell();
+            let rendimiento = '0.0';
+            const km = parseFloat(String(report.km_recorrido||0).replace(/,/g,''));
+            const fuel = parseFloat(String(report.combustible_viaje||0).replace(/,/g,''));
+            if (!isNaN(km) && !isNaN(fuel) && fuel > 0) { rendimiento = (km / fuel).toFixed(1); }
+            cellRend.textContent = rendimiento;
+            cellRend.className = STYLE_CALC;
+
+            // 17-19 ECM/Urea
+            const c17 = row.insertCell(); c17.textContent = fmt(report.rendimiento_viaje); c17.className = STYLE_XML;
+            const c18 = row.insertCell(); c18.textContent = fmt(report.distancia_conducida); c18.className = STYLE_XML;
+            const c19 = row.insertCell(); c19.textContent = fmt(report.litros_urea); c19.className = STYLE_TABLET;
+
+            // 20-22 Diferencias (Calc)
+            // % DIF KM ((ECM - T) / ECM)
+            const cellPercDiff = row.insertCell();
+            let percDiff = '0.00%';
+            let distEcm = parseFloat(String(report.distancia_conducida||0).replace(/,/g, ''));
+            let kmRecT = parseFloat(String(report.km_recorridos||0).replace(/,/g, ''));
+            if (!isNaN(distEcm) && !isNaN(kmRecT) && distEcm > 0) {
+                let diff = distEcm - kmRecT;
+                let result = (diff / distEcm) * 100;
+                percDiff = result.toFixed(2) + '%';
+            }
+            cellPercDiff.textContent = percDiff;
+            cellPercDiff.className = STYLE_CALC;
+
+            // % DIF LITROS ((Total - Viaje) / Viaje)
+            const cellPercDiffLit = row.insertCell();
+            let percDiffLit = '0.00%';
+            if (!isNaN(totalDieselVal) && !isNaN(fuel) && fuel > 0) {
+                let diff = totalDieselVal - fuel;
+                let result = (diff / fuel) * 100;
+                percDiffLit = result.toFixed(2) + '%';
+            }
+            cellPercDiffLit.textContent = percDiffLit;
+            cellPercDiffLit.className = STYLE_CALC;
+
+            // DIF LITROS (Total - Viaje)
+            const cellDifLit = row.insertCell();
+            let valDifLit = '0.00';
+            if (!isNaN(totalDieselVal) && !isNaN(fuel)) { valDifLit = (totalDieselVal - fuel).toFixed(1); }
+            cellDifLit.textContent = valDifLit;
+            cellDifLit.className = STYLE_CALC;
+
+            // 23-27 Tiempos
+            const c23 = row.insertCell(); c23.textContent = fmt(report.tiempo_viaje); c23.className = STYLE_XML;
+            const c24 = row.insertCell(); c24.textContent = fmt(report.tiempo_manejando); c24.className = STYLE_XML;
+            const c25 = row.insertCell(); c25.textContent = fmt(report.tiempo_ralenti); c25.className = STYLE_XML;
+
+            // Idle Total (Calc)
+            const cellIdleTotal = row.insertCell();
+            let idleTot = '0.0';
+            let tViaje = parseFloat(String(report.tiempo_viaje||0).replace(/,/g, ''));
+            let tMan = parseFloat(String(report.tiempo_manejando||0).replace(/,/g, ''));
+            if(!isNaN(tViaje) && !isNaN(tMan)) { idleTot = (tViaje - tMan).toFixed(1); }
+            cellIdleTotal.textContent = idleTot;
+            cellIdleTotal.className = STYLE_CALC;
+
+            // % Idle Stop (Calc)
+            const cellIdleStop = row.insertCell();
+            let idleStopPerc = '0.00%';
+            let tRal = parseFloat(String(report.tiempo_ralenti||0).replace(/,/g, ''));
+            if (!isNaN(tRal) && !isNaN(tMan) && tMan > 0) {
+                let result = (tRal / tMan) * 100;
+                idleStopPerc = result.toFixed(2) + '%';
+            }
+            cellIdleStop.textContent = idleStopPerc;
+            cellIdleStop.className = STYLE_CALC;
+
+            // 28-29 Top Gear
+            const c28 = row.insertCell(); c28.textContent = fmt(report.distancia_top_gear); c28.className = STYLE_XML;
+            
+            // % Top Gear (Calc)
+            const cellPercTop = row.insertCell();
+            let percTop = '0.00%';
+            let distTop = parseFloat(String(report.distancia_top_gear||0).replace(/,/g, ''));
+            if (!isNaN(distTop) && !isNaN(km) && km > 0) {
+                let result = (distTop / km) * 100;
+                percTop = result.toFixed(2) + '%';
+            }
+            cellPercTop.textContent = percTop;
+            cellPercTop.className = STYLE_CALC;
+
+            // RESTO
+            const remainingXML = [
+                report.eventos_frenado, report.rpm_maxima, report.factor_carga, report.def_usado, report.travesia_km,
+                report.distancia_cambio_bajo, report.combustible_manejando, report.combustible_ralenti,
+                report.tiempo_top_gear, report.tiempo_crucero, report.tiempo_exceso_velocidad,
+                report.velocidad_maxima, report.velocidad_promedio, report.rendimiento_manejando,
+                report.eventos_exceso_velocidad, report.tiempo_neutro_coasting, report.tiempo_pto,
+                report.combustible_pto
+            ];
+            remainingXML.forEach(val => {
+                const c = row.insertCell(); c.textContent = fmt(val); c.className = STYLE_XML;
+            });
+
+            const remainingTablet = [
+                report.t2_id, report.t2_company_name, report.t2_unit_number, report.t2_timestamp,
+                report.km_inicio, report.km_fin, report.litros_totalizador
+            ];
+            remainingTablet.forEach(val => {
+                const c = row.insertCell(); c.textContent = fmt(val); c.className = STYLE_TABLET;
+            });
+        }
+
+        async function fetchConsolidatedReports(m='', u='') {
+            document.getElementById('consolidatedTableBody').innerHTML = '<tr><td colspan="55" class="text-center p-6">Cargando...</td></tr>';
+            try {
+                const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                document.getElementById('consolidatedTableBody').innerHTML = '';
+                data.forEach(r => addConsolidatedRow(r));
+                document.getElementById('consolidated-report-count').textContent = `${data.length} registros`;
+            } catch (e) { console.error(e); }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            const m = new Date().toISOString().slice(0, 7);
+            document.getElementById('filter-month-consolidated').value = m;
+            document.getElementById('filter-month-report').value = m;
+            document.getElementById('filter-month-tablet').value = m;
+            fetchConsolidatedReports(m);
+            fetchReports(m);
+            fetchTabletReports(m);
+        });
+        document.getElementById('btn-filter-consolidated').onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, document.getElementById('filter-unit-consolidated').value);
+        document.getElementById('btn-clear-consolidated').onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, '');
+
+        // Upload
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            try {
+                const res = await fetch('upload.php', {method:'POST', body:formData});
+                const d = await res.json();
+                document.getElementById('upload-status').textContent = d.message;
+                fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
+                fetchReports(document.getElementById('filter-month-report').value);
+            } catch(e) { alert("Error upload"); }
+        });
+        
+        // Report Diesel
+        function addReportRow(report) {
+            const row = document.getElementById('reportTableBody').insertRow();
+            row.className = 'hover:bg-orange-50';
+            let unitHtml = report.unit_number;
+            if (report.unit_number === 'PENDIENTE' || report.unit_number === 'N/D') {
+                unitHtml = `<div class="flex items-center gap-2"><span class="text-red-600 font-bold">PENDIENTE</span><button onclick="editUnit(${report.id})" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200">✎</button></div>`;
+            }
+            const columns = [
+                report.id, unitHtml, report.report_date, report.report_time,
+                report.km_hubodometro, report.travesia_km, report.km_recorrido, 
+                report.combustible_viaje, report.distancia_conducida, report.distancia_top_gear, 
+                report.distancia_cambio_bajo, report.combustible_manejando, report.combustible_ralenti, 
+                report.def_usado, report.tiempo_viaje, report.tiempo_manejando, report.tiempo_ralenti, 
+                report.tiempo_top_gear, report.tiempo_crucero, report.tiempo_exceso_velocidad, 
+                report.velocidad_maxima, report.rpm_maxima, report.velocidad_promedio, 
+                report.rendimiento_viaje, report.rendimiento_manejando, report.factor_carga, 
+                report.eventos_exceso_velocidad, report.eventos_frenado, report.tiempo_neutro_coasting, 
+                report.tiempo_pto, report.combustible_pto, report.file_name
+            ];
+            columns.forEach((val, i) => {
+                const c = row.insertCell();
+                if(i===1) c.innerHTML = val;
+                else c.textContent = (i > 3) ? fmt(val) : val;
+                c.className = 'px-3 py-2 whitespace-nowrap text-gray-700 border-r border-gray-100 text-right';
+            });
+        }
+
+        async function fetchReports(m='', u='', sort='DESC') {
+            document.getElementById('reportTableBody').innerHTML = '<tr><td colspan="32" class="text-center p-6">Cargando...</td></tr>';
+            try {
+                const res = await fetch(`fetch_reports.php?month=${m}&unit=${u}&sort_dir=${sort}&t=${Date.now()}`);
+                const data = await res.json();
+                window.cachedDieselReports = data;
+                document.getElementById('reportTableBody').innerHTML = '';
+                let totKm = 0, totFuel = 0;
+                data.forEach(r => {
+                    totKm += parseFloat(String(r.km_recorrido||0).replace(/,/g,'')) || 0;
+                    totFuel += parseFloat(String(r.combustible_viaje||0).replace(/,/g,'')) || 0;
+                    addReportRow(r);
+                });
+                document.getElementById('report-count').textContent = `${data.length} reportes`;
+                document.getElementById('kpi-total-km').textContent = totKm.toLocaleString('es-MX', {maximumFractionDigits:0});
+                document.getElementById('kpi-total-fuel').textContent = totFuel.toLocaleString('es-MX', {maximumFractionDigits:1}) + ' L';
+            } catch(e) { console.error(e); }
+        }
+
+        // Report Tablet
+        function addTabletReportRow(report) {
+            const row = document.getElementById('tabletTableBody').insertRow();
+            row.className = 'hover:bg-blue-50';
+            const columns = [
+                report.id, report.company_name, report.unit_number, report.timestamp,
+                report.operator_name, report.bitacora_number, report.km_inicio, report.km_fin,
+                report.km_recorridos, report.litros_diesel, report.litros_auto, 
+                report.litros_urea, report.litros_totalizador
+            ];
+            columns.forEach((val, i) => {
+                const c = row.insertCell();
+                c.textContent = (i > 5) ? fmt(val) : (val || 'N/D');
+                c.className = 'px-3 py-2 whitespace-nowrap text-gray-700 border-r border-gray-100 text-right';
+            });
+        }
+
+        async function fetchTabletReports(m='', u='') {
+            document.getElementById('tabletTableBody').innerHTML = '<tr><td colspan="13" class="text-center p-6">Cargando...</td></tr>';
+            try {
+                const res = await fetch(`fetch_tablet_reports.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                window.cachedTabletReports = data;
+                document.getElementById('tabletTableBody').innerHTML = '';
+                data.forEach(r => addTabletReportRow(r));
+                document.getElementById('tablet-report-count').textContent = `${data.length} registros`;
+            } catch(e) { console.error(e); }
+        }
+
+        async function editUnit(reportId) {
+            const newUnit = prompt("Ingrese el número de unidad correcto:");
+            if (newUnit && newUnit.trim() !== "") {
+                try {
+                    await fetch('update_unit.php', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({id: reportId, unit: newUnit.trim()})
+                    });
+                    alert("Unidad actualizada.");
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
+                    fetchReports(document.getElementById('filter-month-report').value);
+                } catch(e) { alert("Error de conexión"); }
+            }
+        }
+
+        // Listeners
+        document.getElementById('btn-filter-report').onclick = () => fetchReports(document.getElementById('filter-month-report').value, document.getElementById('filter-unit-report').value);
+        document.getElementById('btn-clear-report').onclick = () => fetchReports(document.getElementById('filter-month-report').value, '');
+        document.getElementById('btn-filter-tablet').onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value, document.getElementById('filter-unit-tablet').value);
+        document.getElementById('btn-clear-tablet').onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value, '');
+        
+        const fileInput = document.getElementById('file-upload');
+        fileInput.addEventListener('change', function(e) {
+            if(this.files && this.files.length > 0) document.getElementById('file-name-display').textContent = "Archivo: " + this.files[0].name;
+        });
+    </script>
+</body>
+</html>
