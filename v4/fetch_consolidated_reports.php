@@ -23,7 +23,7 @@ try {
     }
 
     $sqlBase = "
-      SELECT 
+        SELECT 
             CASE WHEN t2.id IS NOT NULL THEN 1 ELSE 0 END as conciliado,
             t1.id as t1_id,
             t1.file_name,

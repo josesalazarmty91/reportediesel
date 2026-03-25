@@ -1,0 +1,2055 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fulltrack - Reportes Integrales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* Personalización de la barra de desplazamiento */
+        ::-webkit-scrollbar { height: 12px; width: 12px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 3px solid #f1f5f9; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Estilos base para tablas */
+        th, td { transition: background-color 0.2s, color 0.2s; border-color: #e2e8f0; }
+        tr:hover td { filter: brightness(0.98); }
+        
+        /* Clases utilitarias personalizadas */
+        .cell-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .cell-center { text-align: center; white-space: nowrap; }
+        .cell-text { text-align: left; white-space: nowrap; }
+        
+        /* Encabezado fijo (Sticky Header) */
+        thead th { 
+            position: sticky; 
+            top: 0; 
+            z-index: 40; 
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
+        }
+
+        /* Acordeón para Gráficas */
+        .chart-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, padding 0.3s;
+            opacity: 0;
+        }
+        .chart-content.expanded {
+            max-height: 800px; /* Altura suficiente */
+            opacity: 1;
+        }
+        .arrow-icon { transition: transform 0.3s; }
+        .arrow-icon.rotated { transform: rotate(180deg); }
+        
+        /* Animaciones para Modals y Menús */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        @keyframes fade-in {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
+
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center transition-opacity duration-500">
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm text-center transform transition-all scale-100" id="login-modal">
+            <div class="mb-6">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-3xl">🔒</div>
+            </div>
+            <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Acceso Restringido</h2>
+            <p class="text-slate-500 mb-6 text-sm">Ingresa tu NIP de seguridad para ver los reportes.</p>
+            
+            <form id="login-form" class="space-y-4">
+                <input type="password" id="access-pin" 
+                       class="w-full text-center text-3xl font-bold tracking-[0.5em] border border-slate-300 rounded-xl py-3 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition text-slate-700 placeholder:tracking-normal" 
+                       placeholder="••••" maxlength="8" required autofocus autocomplete="off">
+                
+                <button type="submit" 
+                        class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-lg transform active:scale-95">
+                    Desbloquear Sistema
+                </button>
+            </form>
+            <p id="login-msg" class="text-rose-500 font-bold text-xs mt-4 min-h-[1.5em]"></p>
+        </div>
+    </div>
+
+    <header class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 shadow-lg sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                    Fulltrack Reportes
+                </h1>
+                <p class="text-slate-400 text-xs mt-1 tracking-wide uppercase font-semibold">Sistema Integral de Consolidación - Grupo Amalgama</p>
+            </div>
+            <div class="text-right hidden md:block">
+                <p class="text-xs text-slate-500" id="current-date">Cargando fecha...</p>
+            </div>
+        </div>
+    </header>
+
+    <div class="bg-slate-50 border-b border-slate-200 sticky top-[88px] z-40 shadow-sm flex-none">
+        <nav class="flex container mx-auto items-center flex-wrap" aria-label="Tabs">
+            
+            <button id="tab-diesel-full" onclick="switchTab('diesel-full')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100">
+                <span>⛽</span> Reporte Diesel
+            </button>
+
+            <button id="tab-consolidated" onclick="switchTab('consolidated')" style="display:none" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                <span>📊</span> Consolidado
+            </button>
+
+            <div class="relative group flex-grow md:flex-grow-0">
+                <button id="btn-data-consumo" onclick="toggleDataDropdown()" class="w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                    <span>📋</span> Data Consumo <span class="text-xs ml-1">▼</span>
+                </button>
+                <div id="dropdown-data-consumo" class="hidden absolute top-full left-0 bg-white border border-slate-200 shadow-2xl rounded-b-lg min-w-[240px] z-[60] animate-[fade-in_0.1s_ease-out]">
+                    <div class="py-1">
+                        <button id="tab-report" onclick="switchTab('report')" class="w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 border-b border-slate-50 transition flex items-center gap-3">
+                            <span>🚛</span> Reporte Diesel (ECM)
+                        </button>
+                        <button id="tab-tablet" onclick="switchTab('tablet')" class="w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 border-b border-slate-50 transition flex items-center gap-3">
+                            <span>📱</span> Reporte Tableta
+                        </button>
+                        <button id="tab-manzanillo" onclick="switchTab('manzanillo')" class="w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition flex items-center gap-3">
+                            <span>⚓</span> Reporte Manzanillo
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="tab-charts" onclick="switchTab('charts')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                <span>📈</span> Estadísticas
+            </button>
+
+            <button id="tab-diesel-entry" onclick="switchTab('diesel-entry')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                <span>📥</span> Entradas
+            </button>
+
+            <button id="tab-upload" onclick="switchTab('upload')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                <span>📂</span> Up XML
+            </button>
+            <button id="tab-tomas" onclick="switchTab('tomas')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
+                <span>🧪</span> Registro de Tomas
+            </button>
+        </nav>
+    </div>
+
+    <main class="flex-grow container mx-auto p-4 md:p-6 space-y-6">
+        
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px]">
+
+            <div id="panel-diesel-full" class="p-6 h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between md:items-end mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Diesel</h2>
+                        <p class="text-sm text-slate-500 mt-1">Vista Completa: Tableta + ECM Conciliado</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-month-diesel-full" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                            <input type="text" id="filter-unit-diesel-full" placeholder="Todas..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="fetchNewDieselReport()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm">Filtrar</button>
+                            <button onclick="clearNewDieselReport()" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300 transition shadow-sm">Limpiar</button>
+                            <button onclick="downloadXLS('diesel-full')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm flex items-center gap-2"><span>📥</span> Excel</button>
+                        </div>
+                    </div>
+                    <div class="ml-auto">
+                        <span id="diesel-full-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-max w-full divide-y divide-slate-300 text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold h-10">
+                            <tr>
+                                <th class="px-3 py-2 border-r bg-slate-200 sticky left-0 z-40 w-[70px] shadow-sm">ID Diesel</th>
+                                <th class="px-3 py-2 border-r bg-slate-100 sticky left-[70px] z-40 w-[90px] shadow-sm">Conciliado</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900 sticky left-[160px] z-40 w-[100px] shadow-sm">Unidad</th>
+                                
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Operador</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Fecha</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Hora</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Bitácora</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. ECM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">KM Hubo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">KM Recorrido</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Tab</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Lts Diesel</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Lts Vales</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900 border-l-2 border-emerald-300">Total Diesel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Viaje</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900 font-extrabold">Rendimiento</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Rend. ECM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. ECM (2)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Urea</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Dif KM</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Dif Lts</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">Dif Lts</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Viaje</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Ralentí</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">Idle Total</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Idle</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. TopGear</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% TopGear</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Motor</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Operando</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Ev. Freno</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">RPM Max</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Factor Carga</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">DEF Usado</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Travesia KM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. Bajo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Ralentí</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. TopGear</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Crucero</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Exc Vel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Vel Max</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Vel Prom</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Rend. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Ev. Exc Vel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Neutro</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. PTO</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. PTO</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">ID Tab</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Cía</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Unidad (T)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Fecha (T)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Ini</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Fin</th>
+                                <th class="px-3 py-2 bg-blue-100 text-blue-900">Totalizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dieselFullTableBody" class="bg-white divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-consolidated" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between md:items-end mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Consolidado</h2>
+                        <p class="text-sm text-slate-500 mt-1">Comparativa detallada entre ECM y Cargas Manuales</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-month-consolidated" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                            <input type="text" id="filter-unit-consolidated" placeholder="Todas..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button id="btn-filter-consolidated" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm">Filtrar</button>
+                            <button id="btn-clear-consolidated" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300 transition shadow-sm">Limpiar</button>
+                            <button onclick="downloadXLS('consolidated')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm flex items-center gap-2"><span>📥</span> Excel</button>
+                            <button onclick="toggleConsolidatedSort()" class="bg-slate-600 hover:bg-slate-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm flex items-center gap-2">
+                                <span id="sort-icon-date">▼</span> Orden Fecha
+                            </button>
+                        </div>
+                    </div>
+                    <div class="ml-auto">
+                        <span id="consolidated-report-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-max w-full divide-y divide-slate-300 text-xs border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold h-10">
+                            <tr>
+                                <th class="px-3 py-2 border-r bg-slate-200 sticky left-0 z-40 w-[70px] shadow-sm">ID Diesel</th>
+                                <th class="px-3 py-2 border-r bg-slate-100 sticky left-[70px] z-40 w-[90px] shadow-sm">Conciliado</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900 sticky left-[160px] z-40 w-[100px] shadow-sm">Unidad</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Operador</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Fecha</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Hora</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Bitácora</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. ECM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">KM Hubo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">KM Recorrido</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Tab</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Lts Diesel</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Lts Vales</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900 border-l-2 border-emerald-300">Total Diesel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Viaje</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900 font-extrabold">Rendimiento</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Rend. ECM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. ECM (2)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Urea</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Dif KM</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Dif Lts</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">Dif Lts</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Viaje</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Ralentí</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">Idle Total</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% Idle</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. TopGear</th>
+                                <th class="px-3 py-2 border-r bg-emerald-100 text-emerald-900">% TopGear</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Ev. Freno</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">RPM Max</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Factor Carga</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">DEF Usado</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Travesia KM</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Dist. Bajo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. Ralentí</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. TopGear</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Crucero</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Exc Vel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Vel Max</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Vel Prom</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Rend. Manejo</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Ev. Exc Vel</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. Neutro</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">T. PTO</th>
+                                <th class="px-3 py-2 border-r bg-orange-100 text-orange-900">Comb. PTO</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">ID Tab</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Cía</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Unidad (T)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">Fecha (T)</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Ini</th>
+                                <th class="px-3 py-2 border-r bg-blue-100 text-blue-900">KM Fin</th>
+                                <th class="px-3 py-2 bg-blue-100 text-blue-900">Totalizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="consolidatedTableBody" class="bg-white divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-report" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Diesel (ECM)</h2>
+                        <p class="text-sm text-slate-500">Datos detallados de computadora de viaje</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label><input type="month" id="filter-month-report" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label><input type="text" id="filter-unit-report" placeholder="Buscar..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3"></div>
+                        <div class="flex gap-2">
+                            <button id="btn-filter-report" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm">Filtrar</button>
+                            <button id="btn-clear-report" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300">Limpiar</button>
+                            <button onclick="downloadXLS('diesel')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm flex items-center gap-2"><span>📥</span> XLS</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 flex-none">
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-blue-500 shadow-sm border border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase">Distancia Total</h4>
+                        <p id="kpi-total-km" class="text-2xl font-extrabold text-slate-700 mt-1">0</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg border-l-4 border-orange-500 shadow-sm border border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase">Combustible Total</h4>
+                        <p id="kpi-total-fuel" class="text-2xl font-extrabold text-slate-700 mt-1">0 L</p>
+                    </div>
+                    <div class="md:col-span-2 text-right self-end">
+                        <span id="report-count" class="text-sm font-medium text-slate-500">Cargando...</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-max w-full divide-y divide-slate-200 text-xs">
+                        <thead class="bg-orange-50 text-orange-900 font-bold h-10">
+                            <tr>
+                                <th class="px-3 py-2 text-center w-10">✏️</th>
+                                <th class="px-3 py-2 text-left">ID</th>
+                                <th class="px-3 py-2 text-left bg-orange-100 sticky left-0 z-20">Unidad</th>
+                                <th class="px-3 py-2 text-left">Fecha</th>
+                                <th class="px-3 py-2 text-left">Hora</th>
+                                <th class="px-3 py-2 text-right">KM Hubo</th>
+                                <th class="px-3 py-2 text-right">Travesía</th>
+                                <th class="px-3 py-2 text-right">KM Recorrido</th>
+                                <th class="px-3 py-2 text-right">Comb. Viaje</th>
+                                <th class="px-3 py-2 text-right">Dist. Conducida</th>
+                                <th class="px-3 py-2 text-right">Dist. TopGear</th>
+                                <th class="px-3 py-2 text-right">Dist. Bajo</th>
+                                <th class="px-3 py-2 text-right">Comb. Manejo</th>
+                                <th class="px-3 py-2 text-right">Comb. Ralentí</th>
+                                <th class="px-3 py-2 text-right">DEF Usado</th>
+                                <th class="px-3 py-2 text-right">T. Viaje</th>
+                                <th class="px-3 py-2 text-right">T. Manejo</th>
+                                <th class="px-3 py-2 text-right">T. Ralentí</th>
+                                <th class="px-3 py-2 text-right">T. TopGear</th>
+                                <th class="px-3 py-2 text-right">T. Crucero</th>
+                                <th class="px-3 py-2 text-right">T. Exc Vel</th>
+                                <th class="px-3 py-2 text-right">Vel Max</th>
+                                <th class="px-3 py-2 text-right">RPM Max</th>
+                                <th class="px-3 py-2 text-right">Vel Prom</th>
+                                <th class="px-3 py-2 text-right bg-orange-100 font-bold">Rend. Viaje</th>
+                                <th class="px-3 py-2 text-right">Rend. Manejo</th>
+                                <th class="px-3 py-2 text-right">Factor Carga</th>
+                                <th class="px-3 py-2 text-right">Ev. Exc Vel</th>
+                                <th class="px-3 py-2 text-right">Ev. Freno</th>
+                                <th class="px-3 py-2 text-right">T. Neutro</th>
+                                <th class="px-3 py-2 text-right">T. PTO</th>
+                                <th class="px-3 py-2 text-right">Comb. PTO</th>
+                                <th class="px-3 py-2 text-left">Archivo</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportTableBody" class="bg-white divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-tablet" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Tableta</h2>
+                        <p class="text-sm text-slate-500">Cargas manuales de operadores</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label><input type="month" id="filter-month-tablet" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3"></div>
+                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label><input type="text" id="filter-unit-tablet" placeholder="Buscar..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3"></div>
+                        <div class="flex gap-2">
+                            <button id="btn-filter-tablet" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm">Filtrar</button>
+                            <button id="btn-clear-tablet" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300">Limpiar</button>
+                            <button onclick="downloadXLS('tablet')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm flex items-center gap-2"><span>📥</span> XLS</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-grow overflow-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                        <thead class="bg-blue-50 text-blue-900 font-bold h-10">
+                            <tr>
+                                <th class="px-3 py-2 text-center w-10">✏️</th><th class="px-3 py-2 text-left">ID</th><th class="px-3 py-2 text-left">Cía</th><th class="px-3 py-2 text-left">Unidad</th><th class="px-3 py-2 text-left">Fecha</th><th class="px-3 py-2 text-left">Operador</th><th class="px-3 py-2 text-left">Bitácora</th><th class="px-3 py-2 text-right">KM Ini</th><th class="px-3 py-2 text-right">KM Fin</th><th class="px-3 py-2 text-right font-bold text-emerald-700">KM Rec</th><th class="px-3 py-2 text-right font-bold">Lts Diesel</th><th class="px-3 py-2 text-right">Vales</th><th class="px-3 py-2 text-right font-bold text-emerald-700">Total Diesel</th><th class="px-3 py-2 text-right font-bold text-emerald-800 border-l-2 border-emerald-200">Rend. Real</th><th class="px-3 py-2 text-right">Urea</th><th class="px-3 py-2 text-right">Totalizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabletTableBody" class="bg-white divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-manzanillo" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Manzanillo</h2>
+                        <p class="text-sm text-slate-500 mt-1">Carga de registros externos (.XLS)</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-end gap-2 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-month-manzanillo" class="block w-36 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-indigo-500" onchange="fetchManzanillo()">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                            <input type="text" id="filter-unit-manzanillo" placeholder="Buscar..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-indigo-500" oninput="fetchManzanillo()">
+                        </div>
+
+                        <div class="h-8 w-px bg-slate-200 mx-2"></div>
+
+                        <form id="formManzanillo" class="flex items-center gap-2">
+                            <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition flex items-center gap-2 shadow-sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                <span>Cargar XLS</span>
+                                <input type="file" name="csvFile" accept=".xls,.xlsx" class="hidden" onchange="uploadManzanillo(this)">
+                            </label>
+                        </form>
+
+                        <button onclick="fetchManzanillo()" class="text-slate-500 hover:text-indigo-600 font-bold text-lg px-2" title="Recargar">↻</button>
+                        
+                        <button onclick="downloadXLS('manzanillo')" class="text-emerald-600 hover:text-emerald-800 font-bold px-2 text-sm flex items-center gap-1"><span>📥</span> Excel</button>
+                    </div>
+                </div>
+
+                <div class="flex-grow overflow-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                        <thead class="bg-indigo-50 text-indigo-900 font-bold h-10">
+                            <tr>
+                                <th class="px-4 py-3 text-left border-r border-indigo-100 w-20">ID</th>
+                                <th class="px-4 py-3 text-left border-r border-indigo-100">Unidad</th>
+                                <th class="px-4 py-3 text-left border-r border-indigo-100">Fecha Carga</th>
+                                <th class="px-4 py-3 text-left border-r border-indigo-100">Hora Carga</th>
+                                <th class="px-4 py-3 text-right border-r border-indigo-100">Litros</th>
+                                <th class="px-4 py-3 text-left font-bold hidden">Archivo Origen</th>
+                            </tr>
+                        </thead>
+                        <tbody id="manzanilloTableBody" class="bg-white divide-y divide-slate-100">
+                            <tr><td colspan="5" class="text-center p-10 text-slate-400 italic">Cargando registros...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div id="manzanillo-status" class="text-xs font-bold italic text-slate-400 mt-2 h-4"></div>
+            </div>
+
+            <div id="panel-charts" class="hidden p-6 space-y-6 overflow-auto h-full">
+                <div class="flex flex-col md:flex-row justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex-none">
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Centro de Estadísticas</h2>
+                        <p class="text-sm text-slate-500">Visualización de rendimiento y consumo</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <input type="text" id="filter-unit-charts" placeholder="Filtrar por Unidad..." class="border-slate-300 rounded-md text-sm px-3 py-2 outline-none focus:border-blue-500 shadow-sm">
+                        <button onclick="loadCharts()" class="bg-slate-800 text-white px-4 py-2 rounded-md text-sm font-bold hover:bg-slate-700 transition">Actualizar Gráficas</button>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none">
+                    <button onclick="toggleChart('chart-tablet-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
+                        <span class="font-bold text-blue-700 flex items-center gap-2">📊 Consumo Bases (Solo Diesel)</span>
+                        <span class="arrow-icon text-slate-400">▼</span>
+                    </button>
+                    <div id="chart-tablet-container" class="chart-content p-4">
+                        <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <div class="flex items-center gap-2">
+                                <label class="text-xs font-bold text-blue-800 uppercase">Mes:</label>
+                                <input type="month" id="filter-month-tablet-chart" class="border border-blue-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-blue-400" onchange="loadTabletChart()">
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-blue-100 flex items-center gap-2">
+                                <span class="text-xs text-slate-500 uppercase font-bold">Acumulado Mes:</span>
+                                <span id="tablet-month-total" class="text-lg font-bold text-blue-600">0</span>
+                                <span class="text-xs text-blue-400">L</span>
+                            </div>
+                        </div>
+                        <div class="h-[400px]"><canvas id="tabletChart"></canvas></div>
+                    </div>
+                </div>
+
+
+
+
+
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none">
+                    <button onclick="toggleChart('chart-manzanillo-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
+                        <span class="font-bold text-indigo-700 flex items-center gap-2">⚓ Consumo Diario Manzanillo</span>
+                        <span class="arrow-icon text-slate-400">▼</span>
+                    </button>
+                    <div id="chart-manzanillo-container" class="chart-content p-4">
+                        <div class="flex flex-col md:flex-row items-center justify-between mb-4 gap-4 bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
+                            <div class="flex items-center gap-2"><label class="text-xs font-bold text-indigo-800 uppercase">Mes:</label><input type="month" id="filter-month-manzanillo-chart" class="border border-indigo-200 rounded text-sm px-2 py-1" onchange="loadManzanilloChart()"></div>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-indigo-100 flex items-center gap-2"><span class="text-xs text-slate-500 uppercase font-bold">Acumulado Mes:</span><span id="manzanillo-month-total" class="text-lg font-bold text-indigo-600">0</span><span class="text-xs text-indigo-400">L</span></div>
+                        </div>
+                        <div class="h-[400px]"><canvas id="manzanilloChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
+                    <button onclick="toggleChart('chart-km-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
+                        <span class="font-bold text-emerald-700 flex items-center gap-2">🚛 Kilómetros Recorridos por Unidad</span>
+                        <span class="arrow-icon text-slate-400">▼</span>
+                    </button>
+                    <div id="chart-km-container" class="chart-content p-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4 bg-emerald-50/50 p-3 rounded-lg border border-emerald-100">
+                            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                                <div class="flex items-center gap-2"><label class="text-xs font-bold text-emerald-800 uppercase">Mes:</label><input type="month" id="filter-month-km-chart" class="border border-emerald-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-emerald-400" onchange="updateKmFilters()"></div>
+                                <div class="relative group">
+                                    <button onclick="toggleUnitDropdown()" class="flex items-center gap-2 bg-white border border-emerald-300 text-emerald-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-emerald-50"><span>Seleccionar Unidades</span><span class="text-xs">▼</span></button>
+                                    <div id="unit-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
+                                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100"><input type="checkbox" id="check-all-units" class="rounded text-emerald-600 focus:ring-emerald-500" onclick="toggleAllUnits(this)"><label for="check-all-units" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label></div>
+                                        <div id="unit-checkbox-list" class="space-y-1"><div class="text-xs text-slate-400 p-2">Cargando unidades...</div></div>
+                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmChart(); toggleUnitDropdown()" class="text-xs bg-emerald-600 text-white px-2 py-1 rounded hover:bg-emerald-700">Aplicar</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-emerald-100 flex items-center gap-2 ml-auto"><span class="text-xs text-slate-500 uppercase font-bold">Total KM Mes:</span><span id="km-month-total" class="text-lg font-bold text-emerald-600">0</span><span class="text-xs text-emerald-400">km</span></div>
+                        </div>
+                        <div class="h-[500px]"><canvas id="kmChart"></canvas></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
+                    <button onclick="toggleChart('chart-diesel-unit-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
+                        <span class="font-bold text-blue-800 flex items-center gap-2">⛽ Consumo de Diesel por Unidad (Tableta)</span>
+                        <span class="arrow-icon text-slate-400">▼</span>
+                    </button>
+                    <div id="chart-diesel-unit-container" class="chart-content p-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                            <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
+                                <div class="flex items-center gap-2"><label class="text-xs font-bold text-blue-900 uppercase">Mes:</label><input type="month" id="filter-month-diesel-unit" class="border border-blue-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-blue-400" onchange="updateDieselUnitFilters()"></div>
+                                <div class="relative group">
+                                    <button onclick="toggleDieselUnitDropdown()" class="flex items-center gap-2 bg-white border border-blue-300 text-blue-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-blue-50"><span>Seleccionar Unidades</span><span class="text-xs">▼</span></button>
+                                    <div id="diesel-unit-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
+                                        <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100"><input type="checkbox" id="check-all-diesel-units" class="rounded text-blue-600 focus:ring-blue-500" onclick="toggleAllDieselUnits(this)"><label for="check-all-diesel-units" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label></div>
+                                        <div id="diesel-unit-checkbox-list" class="space-y-1"><div class="text-xs text-slate-400 p-2">Cargando unidades...</div></div>
+                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadDieselUnitChart(); toggleDieselUnitDropdown()" class="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700">Aplicar</button></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-blue-100 flex items-center gap-2 ml-auto"><span class="text-xs text-slate-500 uppercase font-bold">Total Diesel Mes:</span><span id="diesel-unit-month-total" class="text-lg font-bold text-blue-700">0</span><span class="text-xs text-blue-400">L</span></div>
+                        </div>
+                        <div class="h-[500px]"><canvas id="dieselUnitChart"></canvas></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="panel-diesel-entry" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Entradas de Combustible</h2>
+                        <p class="text-sm text-slate-500 mt-1">Registro de compras (Facturas XML del SAT)</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-end gap-2 bg-white p-3 rounded-lg border border-slate-200 shadow-sm">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-diesel-month" class="block w-36 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Base</label>
+                            <select id="filter-diesel-base" class="block w-28 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+                                <option value="">Todas</option>
+                                <option value="García">García</option>
+                                <option value="Manzanillo">Manzanillo</option>
+                                <option value="San Luis">San Luis</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Folio</label>
+                            <input type="text" id="filter-diesel-folio" placeholder="..." class="block w-24 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Proveedor</label>
+                            <input type="text" id="filter-diesel-provider" placeholder="..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-emerald-500">
+                        </div>
+
+                        <div class="flex gap-1">
+                            <button onclick="fetchDieselEntries()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-3 rounded-md text-sm transition" title="Buscar">🔍</button>
+                            <button onclick="clearDieselFilters()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-1.5 px-3 rounded-md text-sm transition border border-slate-300" title="Limpiar">✕</button>
+                        </div>
+
+                        <div class="h-8 w-px bg-slate-200 mx-2"></div>
+
+                        <div class="flex gap-2">
+                            <button onclick="openUploadDieselModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition flex items-center gap-2 shadow-sm">
+                                <span>☁️</span> Cargar XML
+                            </button>
+                            <button onclick="downloadXLS('diesel-entry')" class="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-bold py-1.5 px-3 rounded-md text-sm transition">
+                                <span>📥</span> Excel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-grow overflow-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-full divide-y divide-slate-200 text-xs">
+                        <thead class="bg-emerald-50 text-emerald-900 font-bold h-10 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-4 py-3 text-left border-r border-emerald-100 bg-emerald-100 w-24">Base</th>
+                                <th class="px-4 py-3 text-left border-r border-emerald-100 w-28">Fecha</th>
+                                <th class="px-4 py-3 text-left border-r border-emerald-100 w-32">Folio</th>
+                                <th class="px-4 py-3 text-left border-r border-emerald-100">Proveedor</th>
+                                <th class="px-4 py-3 text-left border-r border-emerald-100 text-purple-900 bg-purple-50">Receptor</th>
+                                <th class="px-4 py-3 text-right border-r border-emerald-100 w-24">Litros</th>
+                                <th class="px-4 py-3 text-right border-r border-emerald-100 w-24 bg-amber-50 text-amber-900 border-amber-100">P. Unit. (Real)</th>
+                                <th class="px-4 py-3 text-right border-r border-emerald-100 w-28 bg-emerald-100/50">SubTotal</th>
+                                <th class="px-4 py-3 text-right font-bold w-32">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dieselEntryTableBody" class="bg-white divide-y divide-slate-100">
+                            <tr><td colspan="9" class="text-center p-10 text-slate-400 italic">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+<div id="panel-tomas" class="hidden p-6 h-full flex flex-col">
+    <div class="flex flex-col xl:flex-row gap-6 h-full">
+        
+        <div class="w-full xl:w-1/4 flex-none">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full">
+                <h3 class="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                    <span class="bg-purple-100 text-purple-600 p-2 rounded-lg">📝</span> Nueva Toma
+                </h3>
+                <form id="formTomas" onsubmit="saveToma(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">No. de Muestra</label>
+                        <input type="text" name="no_muestra" required class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500 font-bold text-slate-700" placeholder="Ej. M-2024-001">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Fecha</label>
+                            <input type="date" name="fecha" required class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500 text-slate-600">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Hora</label>
+                            <input type="time" name="hora" required class="w-full border border-slate-300 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-purple-500 text-slate-600">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Total de Litros</label>
+                        <div class="relative">
+                            <input type="number" step="0.01" name="litros" required class="w-full border border-slate-300 rounded-lg p-2.5 pl-4 outline-none focus:ring-2 focus:ring-purple-500 font-mono text-right text-lg font-bold text-purple-700" placeholder="0.00">
+                            <span class="absolute right-8 top-3 text-slate-400 text-sm font-bold">L</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-lg shadow-md transition transform active:scale-95 mt-4">
+                        Guardar Registro
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="w-full xl:w-1/4 flex-none">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full flex flex-col items-center relative overflow-hidden">
+                <h3 class="text-sm font-bold text-slate-500 uppercase mb-2 w-full text-center">Nivel Actual del Tanque</h3>
+                
+                <div class="text-center mb-4 z-10">
+                    <p id="tankLevelText" class="text-3xl font-extrabold text-purple-700">0 L</p>
+                    <p id="tankPercentText" class="text-sm font-bold text-slate-400">0%</p>
+                </div>
+
+                <div class="relative w-full flex-grow" style="min-h: 200px;">
+                    <canvas id="tankChart"></canvas>
+                </div>
+
+                <div class="w-full text-center mt-2 border-t border-slate-100 pt-2">
+                    <span class="text-xs text-slate-400 font-semibold">Capacidad Total: 30,000 L</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full xl:w-1/2 flex-none flex flex-col bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 flex-none">
+                <h3 class="font-bold text-slate-700">Historial de Tomas</h3>
+                <button onclick="fetchTomas()" class="text-purple-600 hover:text-purple-800 text-sm font-bold flex items-center gap-1">
+                    <span>↻</span> Actualizar
+                </button>
+            </div>
+            <div class="flex-grow overflow-auto p-0 h-0"> <table class="min-w-full divide-y divide-slate-200 text-sm relative">
+                    <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-xs sticky top-0 z-10 shadow-sm">
+                        <tr>
+                            <th class="px-4 py-3 text-left bg-slate-50">No. Muestra</th>
+                            <th class="px-4 py-3 text-left bg-slate-50">Fecha</th>
+                            <th class="px-4 py-3 text-left bg-slate-50">Hora</th>
+                            <th class="px-4 py-3 text-right bg-slate-50">Litros</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tomasTableBody" class="divide-y divide-slate-100">
+                        <tr><td colspan="4" class="text-center p-8 text-slate-400">Cargando...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+            <div id="panel-upload" class="hidden p-6 flex items-center justify-center min-h-[500px]">
+                <div class="w-full max-w-xl bg-white p-10 rounded-2xl shadow-xl border border-slate-100 text-center">
+                    <div class="mb-8">
+                        <div class="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4"><span class="text-3xl">📂</span></div>
+                        <h2 class="text-2xl font-bold text-slate-800">Cargar Reporte ECM</h2>
+                        <p class="text-slate-500 mt-2">Soporta archivos .XML de Cummins y Detroit</p>
+                    </div>
+                    <form id="uploadForm" class="space-y-6">
+                        <div class="w-full">
+                            <label class="flex flex-col items-center justify-center w-full h-48 border-2 border-blue-300 border-dashed rounded-xl cursor-pointer bg-blue-50 hover:bg-blue-100 transition-colors group">
+                                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                    <p class="mb-2 text-sm text-blue-600 group-hover:text-blue-800 font-semibold">Clic para seleccionar archivo</p>
+                                    <p class="text-xs text-slate-500">o arrastra y suelta aquí</p>
+                                </div>
+                                <input name="xmlFile" type="file" accept=".xml" class="hidden" required id="xmlInput" />
+                            </label>
+                        </div> 
+                        <div id="xml-name" class="h-6 text-sm font-bold text-slate-700"></div>
+                        <button type="submit" class="w-full text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 font-bold rounded-lg text-sm px-5 py-4 shadow-lg transform active:scale-95 transition-all">
+                            🚀 Procesar Archivo
+                        </button>
+                    </form>
+                    <div id="upload-status" class="mt-8 text-sm font-medium"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="modal-edit-diesel" class="fixed inset-0 bg-slate-900/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+            <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span>✏️</span> Editar Reporte ECM
+            </h3>
+            <input type="hidden" id="edit-diesel-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                    <input type="text" id="edit-diesel-unit" class="w-full border border-slate-300 rounded p-2 font-bold text-blue-800 uppercase focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">KM Hubodómetro</label>
+                        <input type="text" id="edit-diesel-hubo" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-orange-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-orange-600 uppercase mb-1">KM Recorrido</label>
+                        <input type="text" id="edit-diesel-km" class="w-full border border-slate-300 rounded p-2 font-mono text-right font-bold text-orange-700 bg-orange-50 focus:ring-2 focus:ring-orange-500 outline-none">
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Combustible Viaje (L)</label>
+                    <input type="text" id="edit-diesel-fuel" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-orange-500 outline-none">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal('modal-edit-diesel')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded">Cancelar</button>
+                <button onclick="saveDieselChanges()" class="px-4 py-2 bg-orange-600 text-white font-bold rounded hover:bg-orange-700 shadow-lg">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-edit-tablet" class="fixed inset-0 bg-slate-900/50 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 transform transition-all scale-100">
+            <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span>✏️</span> Editar Reporte Tableta
+            </h3>
+            <input type="hidden" id="edit-tablet-id">
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">No. Bitácora</label>
+                    <input type="text" id="edit-tablet-bitacora" class="w-full border border-slate-300 rounded p-2 font-mono focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4 bg-slate-50 p-3 rounded border border-slate-100">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">KM Inicial</label>
+                        <input type="text" id="edit-tablet-km-ini" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-700 uppercase mb-1">KM Final</label>
+                        <input type="text" id="edit-tablet-km-fin" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Diesel (L)</label>
+                        <input type="text" id="edit-tablet-diesel" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Vales (L)</label>
+                        <input type="text" id="edit-tablet-vales" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Urea (L)</label>
+                        <input type="text" id="edit-tablet-urea" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Totalizador</label>
+                    <input type="text" id="edit-tablet-totalizador" class="w-full border border-slate-300 rounded p-2 font-mono text-right focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-300" placeholder="0000000">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-3 mt-6">
+                <button onclick="closeModal('modal-edit-tablet')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded">Cancelar</button>
+                <button onclick="saveTabletChanges()" class="px-4 py-2 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 shadow-lg">Calcular y Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-upload-diesel" class="fixed inset-0 bg-slate-900/50 z-[70] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 transform transition-all scale-100">
+            <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                <span class="bg-emerald-100 text-emerald-600 p-2 rounded-lg text-lg">⛽</span> 
+                Cargar Factura Diesel
+            </h3>
+            
+            <form id="form-upload-diesel" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Selecciona la Base</label>
+                    <select id="upload-diesel-base" class="w-full border border-slate-300 rounded-lg p-2.5 text-slate-700 focus:ring-2 focus:ring-emerald-500 outline-none font-medium" required>
+                        <option value="" disabled selected>-- Elige una opción --</option>
+                        <option value="García">García</option>
+                        <option value="Manzanillo">Manzanillo</option>
+                        <option value="San Luis">San Luis</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Archivo XML (Factura)</label>
+                    <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-emerald-300 border-dashed rounded-lg cursor-pointer bg-emerald-50 hover:bg-emerald-100 transition group">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-2 text-emerald-500 group-hover:text-emerald-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <p class="mb-1 text-sm text-emerald-600 font-semibold">Clic para buscar XML</p>
+                        </div>
+                        <input type="file" id="upload-diesel-file" accept=".xml" class="hidden" required onchange="document.getElementById('file-name-display').textContent = this.files[0]?.name || ''">
+                    </label>
+                    <div id="file-name-display" class="text-xs text-center mt-2 text-slate-500 font-bold h-4"></div>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="document.getElementById('modal-upload-diesel').classList.add('hidden')" class="px-4 py-2 text-slate-600 font-bold hover:bg-slate-100 rounded-lg transition">Cancelar</button>
+                    <button type="submit" class="px-6 py-2 bg-emerald-600 text-white font-bold rounded-lg hover:bg-emerald-700 shadow-md transition transform active:scale-95">Guardar Factura</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTES DE ESTILO (ACTUALIZADAS PARA STICKY) ---
+        // ID: Fijo a la izquierda 0px
+        const STYLE_ID = 'px-3 py-2 whitespace-nowrap text-slate-600 bg-slate-100 font-bold border-r border-slate-300 sticky left-0 z-20 w-[70px]';
+        // Conciliado: Fijo a 70px
+        const STYLE_CONCILIADO = 'px-3 py-2 whitespace-nowrap text-center bg-white border-r border-slate-200 sticky left-[70px] z-20 w-[90px]';
+        
+        const STYLE_XML = 'cell-num px-3 py-2 text-slate-600 bg-orange-50/50 border-r border-orange-100';
+        const STYLE_TABLET = 'cell-num px-3 py-2 text-slate-600 bg-blue-50/50 border-r border-blue-100';
+        const STYLE_CALC = 'cell-num px-3 py-2 text-emerald-800 bg-emerald-50 font-bold border-r border-emerald-200';
+
+        // --- UTILIDAD DE FORMATO ---
+        const fmt = (v) => {
+            if (v === null || v === undefined || v === 'N/D' || v === '') return 'N/D';
+            const strVal = String(v).trim();
+            const clean = strVal.replace(/,/g, '');
+            const num = parseFloat(clean);
+            if (isNaN(num) || strVal.includes('/') || /[a-zA-Z]/.test(clean)) return v; 
+            return num.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        };
+        
+        let currentConsolidatedSort = 'default'; 
+
+        // Función para cambiar el orden al hacer clic
+        function toggleConsolidatedSort() {
+            const icon = document.getElementById('sort-icon-date');
+            
+            // Alternar entre: default -> desc (Mayor a Menor) -> asc (Menor a Mayor)
+            if (currentConsolidatedSort === 'default' || currentConsolidatedSort === 'date_asc') {
+                currentConsolidatedSort = 'date_desc';
+                icon.textContent = '▼'; 
+                icon.classList.add('text-blue-600');
+            } else {
+                currentConsolidatedSort = 'date_asc';
+                icon.textContent = '▲'; 
+                icon.classList.add('text-blue-600');
+            }
+            
+            fetchConsolidatedReports(
+                document.getElementById('filter-month-consolidated').value, 
+                document.getElementById('filter-unit-consolidated').value
+            );
+        }
+
+        // --- VARIABLES GLOBALES ---
+        let tabletChartInstance = null;
+        let kmChartInstance = null;
+        let monthlyChartInstance = null;
+        let manzanilloChartInstance = null;
+        let dieselUnitChartInstance = null;
+        window.cachedDieselReports = [];
+        window.cachedTabletReports = [];
+        window.cachedManzanillo = [];
+
+        // --- REFERENCIAS DOM ---
+        const tabButtons = { 
+            "diesel-full": document.getElementById('tab-diesel-full'),
+            consolidated: document.getElementById('tab-consolidated'), 
+            report: document.getElementById('tab-report'), 
+            tablet: document.getElementById('tab-tablet'), 
+            manzanillo: document.getElementById('tab-manzanillo'), 
+            charts: document.getElementById('tab-charts'), 
+            "diesel-entry": document.getElementById('tab-diesel-entry'), 
+            upload: document.getElementById('tab-upload') 
+        };
+
+        const tabPanels = { 
+            "diesel-full": document.getElementById('panel-diesel-full'),
+            consolidated: document.getElementById('panel-consolidated'), 
+            report: document.getElementById('panel-report'), 
+            tablet: document.getElementById('panel-tablet'), 
+            manzanillo: document.getElementById('panel-manzanillo'), 
+            charts: document.getElementById('panel-charts'), 
+            "diesel-entry": document.getElementById('panel-diesel-entry'),
+            upload: document.getElementById('panel-upload') ,
+            "tomas": document.getElementById('panel-tomas')
+        };
+
+        // --- NAVEGACIÓN ---
+        function switchTab(tabId) {
+            // Ocultar todos los paneles
+            Object.values(tabPanels).forEach(p => p.classList.add('hidden'));
+            
+            // Resetear estilos de todos los botones (nav principal)
+            const navButtons = document.querySelectorAll('nav button:not(#btn-data-consumo)'); // Excluir botón dropdown
+            navButtons.forEach(b => {
+                // b.className = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+                // ^ ESTILO INACTIVO
+                b.className = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+            });
+
+            // Resetear estilo botón Data Consumo
+            const btnData = document.getElementById('btn-data-consumo');
+            btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+
+            // Mostrar panel seleccionado
+            if(tabPanels[tabId]) tabPanels[tabId].classList.remove('hidden');
+
+            // Estilo Activo (Azul)
+            const activeStyle = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
+
+            // Lógica para resaltar el botón correcto
+            if (['report', 'tablet', 'manzanillo'].includes(tabId)) {
+                // Si es un sub-menú, resaltar el padre "Data Consumo"
+                // Ajuste: para Data Consumo, el estilo activo es igual pero sin flex-grow si es group
+                btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
+            } else {
+                // Si es un botón normal, resaltarlo
+                const btn = document.getElementById('tab-' + tabId);
+                if(btn) btn.className = activeStyle;
+            }
+
+            // Cerrar dropdown si estaba abierto
+            document.getElementById('dropdown-data-consumo').classList.add('hidden');
+
+            // Cargar datos específicos
+            if(tabId === 'charts') loadCharts();
+            if(tabId === 'manzanillo') fetchManzanillo();
+            if(tabId === 'diesel-entry') fetchDieselEntries(); 
+            if(tabId === 'diesel-full') fetchNewDieselReport(); 
+            if(tabId === 'tomas') fetchTomas();
+        }
+
+        function toggleDataDropdown() {
+            const d = document.getElementById('dropdown-data-consumo');
+            d.classList.toggle('hidden');
+        }
+
+        // --- ACORDEÓN ---
+        function toggleChart(containerId, button) {
+            const container = document.getElementById(containerId);
+            const icon = button.querySelector('.arrow-icon');
+            if (container.classList.contains('expanded')) {
+                container.classList.remove('expanded');
+                icon.classList.remove('rotated');
+            } else {
+                container.classList.add('expanded');
+                icon.classList.add('rotated');
+            }
+        }
+
+        function loadCharts() {
+            loadTabletChart(); 
+            loadManzanilloChart();
+        }
+
+        // ==========================================
+        // RENDERIZADO CONSOLIDADO (USADO TAMBIÉN PARA REPORTE DIESEL FULL)
+        // ==========================================
+        function addConsolidatedRow(report, tbodyId) {
+            const tbody = document.getElementById(tbodyId); 
+            const row = tbody.insertRow();
+            row.className = 'hover:bg-slate-50 group';
+
+            const c1 = row.insertCell(); c1.textContent = report.t1_id || 'N/D'; c1.className = STYLE_ID;
+            
+            const c2 = row.insertCell(); 
+            c2.innerHTML = (report.conciliado == 1) ? '<span class="text-emerald-500 font-bold text-lg">●</span>' : '<span class="text-rose-400 font-bold text-lg">●</span>'; 
+            c2.className = STYLE_CONCILIADO;
+            
+            // Columna UNIDAD (Sticky 3)
+            const c3 = row.insertCell(); 
+            let unitHtml = report.unit_number || 'N/D';
+            if (unitHtml === 'PENDIENTE' || unitHtml === 'N/D') {
+                unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${report.t1_id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`;
+                c3.innerHTML = unitHtml;
+            } else { c3.textContent = unitHtml; }
+            // Clase actualizada para STICKY con fondo sólido
+            c3.className = "px-3 py-2 whitespace-nowrap font-bold text-slate-700 bg-orange-50 border-r border-orange-100 sticky left-[160px] z-20 w-[100px]";
+
+            const c4 = row.insertCell(); c4.textContent = report.t2_operator_name || 'N/D'; c4.className = "px-3 py-2 whitespace-nowrap text-xs text-slate-500 bg-blue-50/30 border-r border-blue-100";
+            const c5 = row.insertCell(); c5.textContent = report.t1_report_date || 'N/D'; c5.className = STYLE_XML;
+            const c6 = row.insertCell(); c6.textContent = report.t1_report_time || 'N/D'; c6.className = STYLE_XML;
+            const c7 = row.insertCell(); c7.textContent = report.bitacora_number || 'N/D'; c7.className = STYLE_TABLET;
+
+            // Bloque Distancias
+            row.insertCell().textContent = fmt(report.distancia_conducida); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_hubodometro); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_recorrido); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_recorridos); row.cells[row.cells.length-1].className = STYLE_TABLET;
+
+            // Bloque Litros
+            row.insertCell().textContent = fmt(report.litros_diesel); row.cells[row.cells.length-1].className = STYLE_TABLET;
+            row.insertCell().textContent = fmt(report.litros_auto); row.cells[row.cells.length-1].className = STYLE_TABLET;
+            
+            const lDiesel = parseFloat(String(report.litros_diesel||0).replace(/,/g,'')) || 0;
+            const lAuto = parseFloat(String(report.litros_auto||0).replace(/,/g,'')) || 0;
+            const totalDieselVal = lDiesel + lAuto;
+            const cTotal = row.insertCell(); cTotal.textContent = totalDieselVal.toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1}); 
+            cTotal.className = "cell-num px-3 py-2 text-emerald-900 bg-emerald-100 font-extrabold border-r border-emerald-300 border-l-2 border-l-emerald-400";
+
+            row.insertCell().textContent = fmt(report.combustible_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+
+            // Rendimientos
+            const kmRec = parseFloat(String(report.km_recorrido||0).replace(/,/g,''));
+            const fuelV = parseFloat(String(report.combustible_viaje||0).replace(/,/g,''));
+            const rend = (kmRec > 0 && fuelV > 0) ? (kmRec / fuelV).toFixed(2) : '0.00';
+            const cRend = row.insertCell(); cRend.textContent = rend; cRend.className = "cell-num px-3 py-2 text-white bg-emerald-600 font-bold border-r border-emerald-700";
+
+            row.insertCell().textContent = fmt(report.rendimiento_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.distancia_conducida); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.litros_urea); row.cells[row.cells.length-1].className = STYLE_TABLET;
+
+            // Diferencias
+            const distEcm = parseFloat(String(report.distancia_conducida||0).replace(/,/g, ''));
+            const kmT = parseFloat(String(report.km_recorridos||0).replace(/,/g, ''));
+            const cDifKm = row.insertCell(); cDifKm.textContent = (distEcm > 0) ? (((distEcm - kmT) / distEcm) * 100).toFixed(1) + '%' : '0.0%'; cDifKm.className = STYLE_CALC;
+            const cDifLtPerc = row.insertCell(); cDifLtPerc.textContent = (fuelV > 0) ? (((totalDieselVal - fuelV) / fuelV) * 100).toFixed(1) + '%' : '0.0%'; cDifLtPerc.className = STYLE_CALC;
+            const cDifLtAbs = row.insertCell(); const difAbs = (totalDieselVal - fuelV); cDifLtAbs.textContent = difAbs.toFixed(1);
+            cDifLtAbs.className = (Math.abs(difAbs) > 20) ? "cell-num px-3 py-2 text-rose-600 bg-rose-100 font-bold border-r border-rose-200" : STYLE_CALC;
+
+            // Tiempos
+            row.insertCell().textContent = fmt(report.tiempo_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+            const tMan = parseFloat(String(report.tiempo_manejando||0).replace(/,/g, ''));
+            row.insertCell().textContent = fmt(report.tiempo_manejando); row.cells[row.cells.length-1].className = STYLE_XML;
+            const tRal = parseFloat(String(report.tiempo_ralenti||0).replace(/,/g, ''));
+            row.insertCell().textContent = fmt(report.tiempo_ralenti); row.cells[row.cells.length-1].className = STYLE_XML;
+
+            const tViaje = parseFloat(String(report.tiempo_viaje||0).replace(/,/g, ''));
+            row.insertCell().textContent = (tViaje - tMan).toFixed(1); row.cells[row.cells.length-1].className = STYLE_CALC;
+            row.insertCell().textContent = (tMan > 0) ? ((tRal / tMan) * 100).toFixed(1) + '%' : '0.0%'; row.cells[row.cells.length-1].className = STYLE_CALC;
+
+            row.insertCell().textContent = fmt(report.distancia_top_gear); row.cells[row.cells.length-1].className = STYLE_XML;
+            const dTop = parseFloat(String(report.distancia_top_gear||0).replace(/,/g, ''));
+            row.insertCell().textContent = (kmRec > 0) ? ((dTop / kmRec) * 100).toFixed(1) + '%' : '0.0%'; row.cells[row.cells.length-1].className = STYLE_CALC;
+
+            const porcMotor = (tViaje > 0) ? ((tRal / tViaje) * 100).toFixed(1) + '%' : '0.0%';
+    
+    const cMotor = row.insertCell();
+    cMotor.textContent = porcMotor;
+    cMotor.className = STYLE_CALC; // Usamos el mismo estilo verde
+
+    const porcOperando = (tViaje > 0) ? ((tMan / tViaje) * 100).toFixed(1) + '%' : '0.0%';
+    
+    const cOperando = row.insertCell();
+    cOperando.textContent = porcOperando;
+    cOperando.className = STYLE_CALC; // Usamos el mismo estilo verde
+
+            // Resto ECM
+            [report.eventos_frenado, report.rpm_maxima, report.factor_carga, report.def_usado, report.travesia_km, report.distancia_cambio_bajo, report.combustible_manejando, report.combustible_ralenti, report.tiempo_top_gear, report.tiempo_crucero, report.tiempo_exceso_velocidad, report.velocidad_maxima, report.velocidad_promedio, report.rendimiento_manejando, report.eventos_exceso_velocidad, report.tiempo_neutro_coasting, report.tiempo_pto, report.combustible_pto].forEach(v => { const c = row.insertCell(); c.textContent = fmt(v); c.className = STYLE_XML; });
+            // Resto Tableta
+            [report.t2_id, report.t2_company_name, report.t2_unit_number, report.t2_timestamp, report.km_inicio, report.km_fin, report.litros_totalizador].forEach(v => { const c = row.insertCell(); c.textContent = fmt(v); c.className = STYLE_TABLET; });
+        }
+
+        // Función para el Consolidado Original
+        async function fetchConsolidatedReports(m='', u='') {
+            const tbody = document.getElementById('consolidatedTableBody');
+            tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Consultando base de datos...</td></tr>';
+            try {
+                const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&sort=${currentConsolidatedSort}&t=${Date.now()}`);
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0) tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400">No se encontraron registros.</td></tr>';
+                data.forEach(r => addConsolidatedRow(r, 'consolidatedTableBody'));
+                document.getElementById('consolidated-report-count').textContent = `${data.length} registros`;
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-rose-500 font-bold">Error de conexión con el servidor.</td></tr>'; }
+        }
+
+        // --- NUEVA FUNCIÓN PARA EL REPORTE DIESEL FULL ---
+        async function fetchNewDieselReport() {
+            const m = document.getElementById('filter-month-diesel-full').value;
+            const u = document.getElementById('filter-unit-diesel-full').value;
+            
+            const tbody = document.getElementById('dieselFullTableBody');
+            tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Generando Reporte Maestro...</td></tr>';
+            
+            try {
+                const res = await fetch(`fetch_diesel_full.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400">Sin datos para mostrar.</td></tr>';
+                } else {
+                    data.forEach(r => addConsolidatedRow(r, 'dieselFullTableBody'));
+                }
+                document.getElementById('diesel-full-count').textContent = `${data.length} registros`;
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-rose-500 font-bold">Error de conexión con el servidor.</td></tr>';
+            }
+        }
+
+        function clearNewDieselReport() {
+            const m = new Date().toISOString().slice(0, 7);
+            document.getElementById('filter-month-diesel-full').value = m;
+            document.getElementById('filter-unit-diesel-full').value = '';
+            fetchNewDieselReport();
+        }
+
+        // --- FILTROS Y GRÁFICAS ---
+
+        async function updateKmFilters() {
+            const m = document.getElementById('filter-month-km-chart').value;
+            const listContainer = document.getElementById('unit-checkbox-list');
+            
+            listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
+            
+            try {
+                const res = await fetch(`reportes.php?action=getUnitsByMonth&month=${m}`);
+                const units = await res.json();
+                listContainer.innerHTML = '';
+                if (units.length === 0) { listContainer.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos en este mes</div>'; return; }
+                units.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded';
+                    div.innerHTML = `<input type="checkbox" value="${u}" class="unit-checkbox rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow">${u}</label>`;
+                    div.querySelector('label').onclick = function() { const chk = div.querySelector('input'); chk.checked = !chk.checked; };
+                    listContainer.appendChild(div);
+                });
+                document.getElementById('check-all-units').checked = true;
+                loadKmChart();
+            } catch (e) { listContainer.innerHTML = '<div class="text-xs text-rose-500">Error al cargar</div>'; }
+        }
+
+        async function updateDieselUnitFilters() {
+            const m = document.getElementById('filter-month-diesel-unit').value;
+            const listContainer = document.getElementById('diesel-unit-checkbox-list');
+            listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getDieselUnitsByMonth&month=${m}`);
+                const units = await res.json();
+                listContainer.innerHTML = '';
+                if (units.length === 0) { listContainer.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos en este mes</div>'; return; }
+                units.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded';
+                    div.innerHTML = `<input type="checkbox" value="${u}" class="diesel-unit-checkbox rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow">${u}</label>`;
+                    div.querySelector('label').onclick = function() { const chk = div.querySelector('input'); chk.checked = !chk.checked; };
+                    listContainer.appendChild(div);
+                });
+                document.getElementById('check-all-diesel-units').checked = true;
+                loadDieselUnitChart();
+            } catch (e) { listContainer.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function toggleDieselUnitDropdown() { document.getElementById('diesel-unit-dropdown').classList.toggle('hidden'); }
+        function toggleAllDieselUnits(source) { document.querySelectorAll('.diesel-unit-checkbox').forEach(cb => cb.checked = source.checked); }
+        function toggleUnitDropdown() { document.getElementById('unit-dropdown').classList.toggle('hidden'); }
+        function toggleAllUnits(source) { document.querySelectorAll('.unit-checkbox').forEach(cb => cb.checked = source.checked); }
+
+        async function loadDieselUnitChart() {
+            const m = document.getElementById('filter-month-diesel-unit').value;
+            const checkboxes = document.querySelectorAll('.diesel-unit-checkbox:checked');
+            const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
+            if(selectedUnits.length === 0 && document.querySelectorAll('.diesel-unit-checkbox').length > 0) { alert("Selecciona al menos una unidad"); return; }
+
+            try {
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getDieselStatsByUnit&month=${m}&units=${unitsParam}`);
+                const response = await res.json();
+                document.getElementById('diesel-unit-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1});
+                const data = response.data || [];
+                if (dieselUnitChartInstance) dieselUnitChartInstance.destroy();
+                const ctx = document.getElementById('dieselUnitChart').getContext('2d');
+                dieselUnitChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.map(d => d.unit),
+                        datasets: [{ label: 'Consumo Diesel (L)', data: data.map(d => d.fuel), backgroundColor: 'rgba(29, 78, 216, 0.6)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1, borderRadius: 4 }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Litros (L)' } } } },
+                    plugins: [{ id: 'dieselLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' L'; ctx.fillStyle = '#1e3a8a'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch(e) { console.error("Error chart Diesel", e); }
+        }
+
+        async function loadKmChart() {
+            const m = document.getElementById('filter-month-km-chart').value;
+            const checkboxes = document.querySelectorAll('.unit-checkbox:checked');
+            const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
+            if(selectedUnits.length === 0 && document.querySelectorAll('.unit-checkbox').length > 0) { alert("Selecciona al menos una unidad"); return; }
+
+            try {
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${unitsParam}`);
+                const response = await res.json();
+                document.getElementById('km-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits: 0});
+                const data = response.data || [];
+                if (kmChartInstance) kmChartInstance.destroy();
+                const ctx = document.getElementById('kmChart').getContext('2d');
+                kmChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: data.map(d => d.unit), datasets: [{ label: 'Kilómetros Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1, borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                    plugins: [{ id: 'customLabels', afterDatasetsDraw(chart, args, options) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#064e3b'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch(e) { console.error("Error chart KM", e); }
+        }
+
+        async function loadTabletChart() {
+            try {
+                const m = document.getElementById('filter-month-tablet-chart').value;
+                const res = await fetch(`reportes.php?action=getTabletStats&month=${m}`);
+                if(!res.ok) throw new Error('Error Server');
+                const response = await res.json();
+                document.getElementById('tablet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits: 1});
+                const data = response.data || [];
+                if(tabletChartInstance) tabletChartInstance.destroy();
+                const ctx = document.getElementById('tabletChart').getContext('2d');
+                tabletChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { 
+                        labels: data.map(d => d.dia), 
+                        datasets: [{ 
+                            label: 'Consumo Diesel', 
+                            data: data.map(d => d.total), 
+                            backgroundColor: 'rgba(37, 99, 235, 0.6)', 
+                            borderColor: 'rgba(37, 99, 235, 1)', 
+                            borderWidth: 1, 
+                            borderRadius: 4 
+                        }] 
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } }, scales: { y: { beginAtZero: true } } }
+                });
+            } catch(e) { console.error("Error cargando gráfica tableta:", e); }
+        }
+
+        // --- MANZANILLO LOGIC (ACTUALIZADA CON FILTROS CLIENT-SIDE) ---
+        async function uploadManzanillo(input) {
+            if (!input.files.length) return;
+            const s = document.getElementById('manzanillo-status');
+            s.textContent = "Leyendo Excel..."; s.className = "text-xs font-bold text-blue-600 animate-pulse";
+            
+            const file = input.files[0];
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheet = workbook.SheetNames[0];
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], {header: 1});
+                    s.textContent = "Enviando al servidor...";
+                    const res = await fetch('upload_manzanillo.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ data: jsonData, fileName: file.name }) });
+                    const d = await res.json();
+                    if (d.status === 'success') { s.textContent = `✓ ${d.inserted} nuevos, ${d.skipped} duplicados.`; s.className = "text-xs font-bold text-emerald-600"; fetchManzanillo(); } else { s.textContent = "Error: " + d.message; s.className = "text-xs font-bold text-rose-600"; }
+                } catch (error) { s.textContent = "Error lectura Excel"; s.className = "text-xs font-bold text-rose-600"; }
+            };
+            reader.readAsArrayBuffer(file);
+            input.value = ''; 
+        }
+
+async function fetchManzanillo() {
+            const tbody = document.getElementById('manzanilloTableBody');
+            
+            // Cargar datos si no están en caché
+            if (window.cachedManzanillo.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-slate-400 animate-pulse">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('fetch_manzanillo.php');
+                    window.cachedManzanillo = await res.json();
+                } catch(e) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-rose-500">Error al cargar</td></tr>';
+                    return;
+                }
+            }
+
+            // Obtener valores de los filtros
+            const filterMonth = document.getElementById('filter-month-manzanillo').value; // Formato: YYYY-MM
+            const filterUnit = document.getElementById('filter-unit-manzanillo').value.toUpperCase();
+
+            let filteredData = window.cachedManzanillo;
+
+            // --- LÓGICA DE FILTRADO CORREGIDA ---
+            if (filterMonth) {
+                filteredData = filteredData.filter(r => {
+                    if (!r.fecha_carga) return false;
+                    
+                    // Opción A: La fecha ya viene como YYYY-MM-DD
+                    if (r.fecha_carga.includes('-')) {
+                        return r.fecha_carga.startsWith(filterMonth);
+                    }
+                    
+                    // Opción B: La fecha viene como DD/MM/YYYY (Formato Excel/Latino)
+                    if (r.fecha_carga.includes('/')) {
+                        const parts = r.fecha_carga.split('/'); // [DD, MM, YYYY]
+                        if (parts.length === 3) {
+                            // Reconstruimos a YYYY-MM para comparar
+                            const rowMonth = `${parts[2]}-${parts[1]}`; 
+                            return rowMonth === filterMonth;
+                        }
+                    }
+                    return false;
+                });
+            }
+
+            if (filterUnit) {
+                filteredData = filteredData.filter(r => (r.unidad || '').toUpperCase().includes(filterUnit));
+            }
+
+            // Renderizar Tabla
+            tbody.innerHTML = filteredData.length ? '' : '<tr><td colspan="6" class="text-center p-10 text-slate-400">Sin coincidencias</td></tr>';
+            
+            filteredData.forEach(r => {
+                const row = tbody.insertRow(); 
+                row.className = 'hover:bg-indigo-50/30';
+                
+                const litros = parseFloat(r.litros_diesel || 0).toLocaleString('es-MX', {minimumFractionDigits: 2});
+
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-500 text-xs">${r.id}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 font-bold text-slate-700">${r.unidad}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.fecha_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.hora_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-right font-bold text-indigo-700">${litros}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 italic hidden">${r.nombre_archivo_origen}</td>
+                `;
+            });
+            
+            document.getElementById('manzanillo-status').textContent = `${filteredData.length} registros mostrados`;
+        }
+
+        async function loadManzanilloChart() {
+            try {
+                const m = document.getElementById('filter-month-manzanillo-chart').value;
+                const res = await fetch(`reportes.php?action=getManzanilloDailyStats&month=${m}`);
+                if(!res.ok) throw new Error('Error Server');
+                const response = await res.json();
+                document.getElementById('manzanillo-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits: 1});
+                const data = response.data || [];
+                if(manzanilloChartInstance) manzanilloChartInstance.destroy();
+                const ctx = document.getElementById('manzanilloChart').getContext('2d');
+                manzanilloChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { 
+                        labels: data.map(d => d.dia), 
+                        datasets: [{ 
+                            label: 'Consumo Diario Manzanillo (L)', 
+                            data: data.map(d => parseFloat(d.total_litros || 0)), 
+                            borderColor: '#4f46e5', 
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)', 
+                            borderWidth: 2, 
+                            pointStyle: 'rectRot', 
+                            pointRadius: 6, 
+                            pointHoverRadius: 8, 
+                            tension: 0.2, 
+                            fill: true, 
+                            borderDash: [5, 5] 
+                        }] 
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        // --- FETCH DIESEL (ECM) ---
+        async function fetchReports(m='') {
+            const tbody = document.getElementById('reportTableBody'); tbody.innerHTML = '';
+            try {
+                const res = await fetch(`fetch_reports.php?month=${m}`);
+                const data = await res.json();
+                window.cachedDieselReports = data;
+                let tKm = 0, tFl = 0;
+                
+                data.forEach(r => {
+                    tKm += parseFloat(String(r.km_recorrido||0).replace(/,/g,'')); 
+                    tFl += parseFloat(String(r.combustible_viaje||0).replace(/,/g,''));
+                    
+                    const row = tbody.insertRow(); 
+                    row.className = 'hover:bg-orange-50/50 group';
+                    
+                    // Botón de Edición
+                    const btnEdit = `<button onclick='openEditDiesel(${JSON.stringify(r)})' class="text-slate-400 hover:text-orange-600 transition transform hover:scale-110">✏️</button>`;
+
+                    let unitHtml = r.unit_number;
+                    if (r.unit_number === 'PENDIENTE' || r.unit_number === 'N/D') {
+                        unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${r.id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`;
+                    }
+
+                    row.innerHTML = `<td class="px-3 py-2 border-r text-center bg-white">${btnEdit}</td><td class="px-3 py-2 border-r font-medium text-slate-700">${r.id}</td><td class="px-3 py-2 border-r font-medium text-slate-700 sticky left-0 bg-orange-100 z-10">${unitHtml}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_date}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_time}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_hubodometro)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.travesia_km)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.km_recorrido)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.combustible_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_conducida)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_cambio_bajo)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.def_usado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_crucero)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rpm_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_promedio)}</td><td class="px-3 py-2 border-r text-right bg-emerald-50 text-emerald-800 font-bold">${fmt(r.rendimiento_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rendimiento_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.factor_carga)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_frenado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_neutro_coasting)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_pto)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_pto)}</td><td class="px-3 py-2 text-xs text-slate-400 italic">${r.file_name}</td>`;
+                });
+                document.getElementById('report-count').textContent = `${data.length} registros`;
+                document.getElementById('kpi-total-km').textContent = tKm.toLocaleString('es-MX', {maximumFractionDigits:0});
+                document.getElementById('kpi-total-fuel').textContent = tFl.toLocaleString('es-MX', {maximumFractionDigits:1}) + ' L';
+            } catch(e) { console.error(e); }
+        }
+
+        // --- FETCH TABLET ---
+        async function fetchTabletReports(m='') {
+            const tbody = document.getElementById('tabletTableBody'); 
+            tbody.innerHTML = '';
+            try {
+                const res = await fetch(`fetch_tablet_reports.php?month=${m}`);
+                const data = await res.json();
+                window.cachedTabletReports = data;
+                data.forEach(r => {
+                    const row = tbody.insertRow(); 
+                    row.className = 'hover:bg-blue-50/50 group';
+
+                    const kmRec = parseFloat(String(r.km_recorridos || 0).replace(/,/g, '')) || 0;
+                    const ltsDiesel = parseFloat(String(r.litros_diesel || 0).replace(/,/g, '')) || 0;
+                    const ltsVales = parseFloat(String(r.litros_auto || 0).replace(/,/g, '')) || 0;
+                    const totalDiesel = ltsDiesel + ltsVales;
+                    const rendReal = (totalDiesel > 0) ? (kmRec / totalDiesel) : 0;
+
+                    const rString = JSON.stringify(r).replace(/'/g, "&#39;");
+                    const btnEdit = `<button onclick='openEditTablet(${rString})' class="text-slate-400 hover:text-blue-600 transition transform hover:scale-110">✏️</button>`;
+
+                    const styleCalculated = "px-3 py-2 border-r text-right font-bold text-emerald-800 bg-emerald-100";
+                    const styleRendimiento = "px-3 py-2 border-r text-right font-extrabold text-emerald-900 bg-emerald-200 border-l-2 border-emerald-300";
+
+                    row.innerHTML = `<td class="px-3 py-2 border-r text-center bg-white">${btnEdit}</td><td class="px-3 py-2 border-r text-xs text-slate-500">${r.id}</td><td class="px-3 py-2 border-r text-xs font-bold text-slate-600 uppercase">${r.company_name}</td><td class="px-3 py-2 border-r font-bold text-blue-800">${r.unit_number}</td><td class="px-3 py-2 border-r text-slate-600">${r.timestamp}</td><td class="px-3 py-2 border-r text-xs text-slate-600 uppercase">${r.operator_name}</td><td class="px-3 py-2 border-r text-right font-mono text-slate-600">${r.bitacora_number}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_inicio)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_fin)}</td><td class="${styleCalculated}">${fmt(r.km_recorridos)}</td><td class="px-3 py-2 border-r text-right font-bold text-blue-700">${fmt(r.litros_diesel)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.litros_auto)}</td><td class="${styleCalculated}">${totalDiesel.toLocaleString('es-MX', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="${styleRendimiento}">${rendReal.toFixed(2)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.litros_urea)}</td><td class="px-3 py-2 text-right text-slate-500">${fmt(r.litros_totalizador)}</td>`;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function editUnit(reportId) {
+            const newUnit = prompt("Ingrese el número de unidad correcto:");
+            if (newUnit && newUnit.trim() !== "") {
+                try {
+                    await fetch('update_unit.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: reportId, unit: newUnit.trim()}) });
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
+                    fetchReports(document.getElementById('filter-month-report').value);
+                } catch(e) { alert("Error de conexión"); }
+            }
+        }
+
+        // --- AUTH & STARTUP ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('auth_fulltrack') === 'true') {
+                unlockSystem(false); 
+            } else {
+                document.getElementById('login-form').addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const pin = document.getElementById('access-pin').value;
+                    const msg = document.getElementById('login-msg');
+                    const btn = e.target.querySelector('button');
+                    
+                    msg.textContent = "Verificando...";
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75');
+
+                    try {
+                        const res = await fetch('verify_pin.php', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ pin })
+                        });
+                        const data = await res.json();
+                        
+                        if (data.status === 'success') {
+                            sessionStorage.setItem('auth_fulltrack', 'true'); 
+                            unlockSystem(true); 
+                        } else {
+                            msg.textContent = "⛔ " + (data.message || "NIP Incorrecto");
+                            vibrateError();
+                            document.getElementById('access-pin').value = '';
+                            document.getElementById('access-pin').focus();
+                        }
+                    } catch (err) {
+                        msg.textContent = "⚠️ Error de conexión";
+                    } finally {
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-75');
+                    }
+                });
+            }
+        });
+
+        function unlockSystem(animate) {
+            const overlay = document.getElementById('login-overlay');
+            if (animate) {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            } else {
+                overlay.style.display = 'none';
+            }
+            initDashboard(); 
+        }
+
+        function vibrateError() {
+            const modal = document.getElementById('login-modal');
+            modal.classList.add('animate-[shake_0.3s_ease-in-out]');
+            setTimeout(() => modal.classList.remove('animate-[shake_0.3s_ease-in-out]'), 300);
+        }
+
+        function initDashboard() {
+            const today = new Date();
+            const m = today.toISOString().slice(0, 7);
+            
+            document.getElementById('current-date').textContent = today.toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+            
+            // Asignar mes actual a TODOS los filtros, incluido el nuevo de diesel
+            ['consolidated','report','tablet', 'diesel-full', 'diesel', 'manzanillo'].forEach(id => {
+                const el = document.getElementById(`filter-month-${id}`);
+                if(el) el.value = m;
+            });
+
+            // NUEVO: Filtro Diesel
+            const dieselFilter = document.getElementById('filter-diesel-month');
+            if(dieselFilter) dieselFilter.value = m; 
+            
+            // Cargar por defecto el nuevo Reporte Diesel
+            fetchNewDieselReport();
+            
+            // Cargar datos en segundo plano
+            fetchConsolidatedReports(m); 
+            fetchReports(m); 
+            fetchTabletReports(m);
+            // Manzanillo se cargará al dar click o al iniciar si prefieres
+            fetchManzanillo();
+
+            const tabletChartFilter = document.getElementById('filter-month-tablet-chart');
+            if(tabletChartFilter) { tabletChartFilter.value = m; loadTabletChart(); }
+
+            const kmFilter = document.getElementById('filter-month-km-chart');
+            if(kmFilter) { kmFilter.value = m; updateKmFilters(); }
+
+            const dieselUnitFilter = document.getElementById('filter-month-diesel-unit');
+            if(dieselUnitFilter) { dieselUnitFilter.value = m; updateDieselUnitFilters(); }
+            
+            document.getElementById('xmlInput').onchange = function() { document.getElementById('xml-name').textContent = this.files[0] ? this.files[0].name : ''; };
+            
+            document.getElementById('uploadForm').onsubmit = async function(e) {
+                e.preventDefault();
+                const s = document.getElementById('upload-status'); s.textContent = "Procesando..."; s.className = "mt-8 text-sm font-bold text-blue-600 animate-pulse";
+                try {
+                    const res = await fetch('upload.php', { method: 'POST', body: new FormData(this) });
+                    const r = await res.json();
+                    s.textContent = r.message; s.className = `mt-8 text-sm font-bold ${r.status==='success'?'text-emerald-600':'text-rose-600'}`;
+                    if(r.status === 'success') { 
+                        fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                        fetchReports(document.getElementById('filter-month-report').value); 
+                        fetchNewDieselReport(); // Actualizar también el nuevo reporte
+                    }
+                } catch(e) { s.textContent = "Error de conexión"; s.className = "mt-8 text-sm font-bold text-rose-600"; }
+            };
+
+            document.getElementById('btn-filter-consolidated').onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, document.getElementById('filter-unit-consolidated').value);
+            document.getElementById('btn-clear-consolidated').onclick = () => { document.getElementById('filter-unit-consolidated').value = ''; fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, ''); };
+            document.getElementById('btn-filter-report').onclick = () => fetchReports(document.getElementById('filter-month-report').value);
+            document.getElementById('btn-filter-tablet').onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value);
+        }
+
+        // --- LÓGICA DE EDICIÓN ---
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // --- FUNCIONES ACTUALIZADAS PARA DIESEL (ECM) ---
+        function openEditDiesel(data) {
+            document.getElementById('edit-diesel-id').value = data.id;
+            document.getElementById('edit-diesel-unit').value = data.unit_number || '';
+            document.getElementById('edit-diesel-hubo').value = String(data.km_hubodometro || '').replace(/,/g, '');
+            document.getElementById('edit-diesel-km').value = String(data.km_recorrido || '').replace(/,/g, '');
+            document.getElementById('edit-diesel-fuel').value = String(data.combustible_viaje || '').replace(/,/g, '');
+            document.getElementById('modal-edit-diesel').classList.remove('hidden');
+        }
+
+        async function saveDieselChanges() {
+            const id = document.getElementById('edit-diesel-id').value;
+            const unit = document.getElementById('edit-diesel-unit').value.trim();
+            const hubo = document.getElementById('edit-diesel-hubo').value;
+            const km = document.getElementById('edit-diesel-km').value;
+            const litros = document.getElementById('edit-diesel-fuel').value;
+
+            try {
+                const res = await fetch('update_data.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'update_diesel', id: id, unit: unit, hubo: hubo, km: km, litros: litros })
+                });
+                const resp = await res.json();
+                if(resp.status === 'success') {
+                    closeModal('modal-edit-diesel');
+                    const m = document.getElementById('filter-month-report').value;
+                    fetchReports(m);
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
+                    alert("✅ " + resp.message);
+                } else { alert("❌ Error: " + resp.message); }
+            } catch(e) { alert("Error de conexión"); console.error(e); }
+        }
+
+        // TABLETA (LÓGICA ACTUALIZADA PARA MODAL NUEVO)
+        function openEditTablet(data) {
+            document.getElementById('edit-tablet-id').value = data.id;
+            document.getElementById('edit-tablet-bitacora').value = data.bitacora_number || '';
+            document.getElementById('edit-tablet-km-ini').value = String(data.km_inicio || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-km-fin').value = String(data.km_fin || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-diesel').value = String(data.litros_diesel || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-vales').value = String(data.litros_auto || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-urea').value = String(data.litros_urea || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-totalizador').value = String(data.litros_totalizador || '').replace(/,/g, '');
+            document.getElementById('modal-edit-tablet').classList.remove('hidden');
+        }
+
+        async function saveTabletChanges() {
+            const id = document.getElementById('edit-tablet-id').value;
+            const bitacora = document.getElementById('edit-tablet-bitacora').value;
+            const km_ini = document.getElementById('edit-tablet-km-ini').value;
+            const km_fin = document.getElementById('edit-tablet-km-fin').value;
+            const diesel = document.getElementById('edit-tablet-diesel').value;
+            const vales = document.getElementById('edit-tablet-vales').value;
+            const urea = document.getElementById('edit-tablet-urea').value;
+            const totalizador = document.getElementById('edit-tablet-totalizador').value;
+
+            try {
+                const res = await fetch('update_data.php', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'update_tablet', id: id, bitacora: bitacora, km_ini: km_ini, km_fin: km_fin, diesel: diesel, vales: vales, urea: urea, totalizador: totalizador })
+                });
+                const resp = await res.json();
+                if(resp.status === 'success') {
+                    closeModal('modal-edit-tablet');
+                    const m = document.getElementById('filter-month-tablet').value;
+                    fetchTabletReports(m);
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
+                    alert("✅ " + resp.message);
+                } else { alert("❌ Error: " + resp.message); }
+            } catch(e) { alert("Error de conexión"); console.error(e); }
+        }
+
+        // --- LÓGICA ENTRADAS DIESEL (ACTUALIZADA CON FILTROS, MODAL Y P.UNITARIO CALCULADO) ---
+
+        function openUploadDieselModal() {
+            document.getElementById('form-upload-diesel').reset();
+            document.getElementById('file-name-display').textContent = '';
+            document.getElementById('modal-upload-diesel').classList.remove('hidden');
+        }
+
+        document.getElementById('form-upload-diesel').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const base = document.getElementById('upload-diesel-base').value;
+            const fileInput = document.getElementById('upload-diesel-file');
+            
+            if(!base) { alert("Selecciona una base"); return; }
+            if(fileInput.files.length === 0) { alert("Selecciona un archivo XML"); return; }
+
+            const formData = new FormData();
+            formData.append('entryFile', fileInput.files[0]);
+            formData.append('base', base); 
+
+            const btn = this.querySelector('button[type="submit"]');
+            const originalText = btn.textContent;
+            btn.textContent = "Procesando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('upload_diesel_entry.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                const resp = await res.json();
+                
+                if (resp.status === 'success') {
+                    alert("✅ " + resp.message);
+                    document.getElementById('modal-upload-diesel').classList.add('hidden');
+                    fetchDieselEntries(); 
+                } else {
+                    alert("❌ Error: " + resp.message);
+                }
+            } catch (e) {
+                alert("❌ Error de conexión.");
+                console.error(e);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        });
+
+        async function fetchDieselEntries() {
+            const tbody = document.getElementById('dieselEntryTableBody');
+            
+            // Obtener valores de los filtros
+            const month = document.getElementById('filter-diesel-month').value;
+            const folio = document.getElementById('filter-diesel-folio').value.trim();
+            const provider = document.getElementById('filter-diesel-provider').value.trim();
+            const base = document.getElementById('filter-diesel-base').value;
+
+            // Construir URL con parámetros
+            const params = new URLSearchParams({
+                month: month,
+                folio: folio,
+                proveedor: provider,
+                base: base
+            });
+
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-slate-400 font-bold animate-pulse">Filtrando facturas...</td></tr>';
+            
+            try {
+                const res = await fetch(`fetch_diesel_entries.php?${params.toString()}`);
+                const data = await res.json();
+                
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-slate-400 italic">No se encontraron registros con estos filtros.</td></tr>';
+                    return;
+                }
+                
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.className = "hover:bg-emerald-50/50 transition duration-150 group";
+                    
+                    const litrosFloat = parseFloat(item.litros) || 0;
+                    const totalFloat = parseFloat(item.importe_total) || 0;
+                    
+                    // Cálculo P. Unitario Real (Total / Litros)
+                    const pUnitarioCalc = litrosFloat > 0 ? (totalFloat / litrosFloat) : 0;
+
+                    const litros = litrosFloat.toLocaleString('es-MX', {minimumFractionDigits: 2});
+                    const pUnitario = pUnitarioCalc.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'});
+                    const subtotal = parseFloat(item.subtotal || 0).toLocaleString('es-MX', {style: 'currency', currency: 'MXN'});
+                    const total = totalFloat.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'});
+                    
+                    let badgeClass = "bg-slate-100 text-slate-600";
+                    if(item.base === 'García') badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
+                    if(item.base === 'Manzanillo') badgeClass = "bg-indigo-100 text-indigo-800 border-indigo-200";
+                    if(item.base === 'San Luis') badgeClass = "bg-orange-100 text-orange-800 border-orange-200";
+
+                    row.innerHTML = `
+                        <td class="px-4 py-3 border-r border-slate-100 whitespace-nowrap">
+                            <span class="px-2 py-1 rounded text-xs font-bold border ${badgeClass}">${item.base || 'N/D'}</span>
+                        </td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-slate-600 font-medium whitespace-nowrap">${item.fecha_factura}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 font-bold text-slate-700 whitespace-nowrap">${item.folio || 'S/N'}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-slate-500 text-xs uppercase tracking-wide group-hover:text-slate-700 truncate max-w-[150px]" title="${item.proveedor}">${item.proveedor}</td>
+                        
+                        <td class="px-4 py-3 border-r border-slate-100 bg-purple-50/20">
+                            <div class="text-xs font-bold text-purple-800 truncate max-w-[150px]" title="${item.receptor_nombre}">${item.receptor_nombre || 'N/D'}</div>
+                            <div class="text-[10px] text-purple-500 font-mono">${item.receptor_rfc || ''}</div>
+                        </td>
+
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono text-blue-600 font-bold bg-blue-50/30">${litros} L</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono font-bold text-amber-800 bg-amber-50">${pUnitario}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono font-medium text-emerald-600 bg-emerald-50/30">${subtotal}</td>
+                        <td class="px-4 py-3 text-right font-bold text-emerald-800 bg-emerald-100/30">${total}</td>
+                    `;
+                });
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-rose-500 font-bold">Error al cargar los datos.</td></tr>';
+            }
+        }
+
+        function clearDieselFilters() {
+            // Resetear inputs
+            const today = new Date();
+            const m = today.toISOString().slice(0, 7);
+            document.getElementById('filter-diesel-month').value = m; // Volver al mes actual
+            document.getElementById('filter-diesel-base').value = "";
+            document.getElementById('filter-diesel-folio').value = "";
+            document.getElementById('filter-diesel-provider').value = "";
+            fetchDieselEntries(); // Recargar
+        }
+
+        // --- ACTUALIZACIÓN DE DESCARGA EXCEL ---
+// Función de descarga Excel BLINDADA contra cambios de fecha
+        function downloadXLS(type) {
+            let selector = `#panel-${type} table`;
+            
+            // Mapeo para nombres especiales
+            if(type === 'diesel') selector = '#panel-report table'; 
+            
+            let table = document.querySelector(selector);
+            
+            if(table) { 
+                // 1. Extraemos los datos TEXTUALES celda por celda
+                // Esto evita que la librería intente "adivinar" fechas y reste días
+                const data = [];
+                const rows = table.querySelectorAll('tr');
+                
+                rows.forEach(row => {
+                    const rowData = [];
+                    // Seleccionamos th (encabezados) y td (celdas)
+                    // Usamos querySelectorAll para incluir columnas ocultas si quisieras, 
+                    // o filtrarlas. Aquí tomamos todo lo que está en la fila.
+                    const cells = row.querySelectorAll('th, td');
+                    
+                    cells.forEach(cell => {
+                        // innerText toma el texto visible. 
+                        // Si quieres incluir columnas ocultas usa textContent
+                        // Para evitar problemas, usamos textContent y limpiamos espacios
+                        rowData.push(cell.innerText.trim());
+                    });
+                    
+                    if(rowData.length > 0) data.push(rowData);
+                });
+
+                // 2. Creamos la hoja de cálculo desde el Array de textos (AOA)
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+
+                // 3. Guardamos el archivo
+                XLSX.writeFile(wb, `Fulltrack_${type}_${new Date().toISOString().slice(0,10)}.xlsx`); 
+            } else { 
+                alert("No hay datos para exportar en esta vista."); 
+            }
+        }
+       // --- LÓGICA REGISTRO DE TOMAS & TANQUE ---
+        
+        let tankChartInstance = null; // Variable global para la instancia de la gráfica
+
+        function updateTankChart(currentLitros) {
+            const maxCapacity = 30000;
+            const current = parseFloat(currentLitros) || 0;
+            
+            // Cálculos para la pila (Stack)
+            // Si hay más de 30k, visualmente lo topamos para que no rompa la gráfica, pero mostramos el número real
+            const visualCurrent = current > maxCapacity ? maxCapacity : current; 
+            const emptySpace = maxCapacity - visualCurrent;
+            const percentage = ((current / maxCapacity) * 100).toFixed(1);
+
+            // 1. Actualizar textos indicadores HTML
+            document.getElementById('tankLevelText').textContent = current.toLocaleString('es-MX') + ' L';
+            document.getElementById('tankPercentText').textContent = percentage + '% Lleno';
+
+            // 2. Configurar Canvas
+            const ctx = document.getElementById('tankChart').getContext('2d');
+
+            // Destruir gráfica anterior si existe para evitar superposiciones
+            if (tankChartInstance) {
+                tankChartInstance.destroy();
+            }
+
+            // 3. Crear Gráfica
+            tankChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Nivel'],
+                    datasets: [
+                        {
+                            label: 'Disponible',
+                            data: [visualCurrent],
+                            backgroundColor: '#9333ea', // Morado (Purple-600)
+                            // Bordes redondeados solo abajo
+                            borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 10, bottomRight: 10 },
+                            borderSkipped: false,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8
+                        },
+                        {
+                            label: 'Espacio Vacío',
+                            data: [emptySpace],
+                            backgroundColor: '#e2e8f0', // Gris claro (Slate-200)
+                            // Bordes redondeados solo arriba
+                            borderRadius: { topLeft: 10, topRight: 10, bottomLeft: 0, bottomRight: 0 },
+                            borderSkipped: false,
+                            barPercentage: 0.7,
+                            categoryPercentage: 0.8
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }, // Ocultar leyenda
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.raw.toLocaleString('es-MX') + ' L';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true, // Habilitar pila
+                            display: false, // Ocultar eje X para limpieza visual
+                            grid: { display: false }
+                        },
+                        y: {
+                            stacked: true, // Habilitar pila
+                            min: 0,
+                            max: maxCapacity,
+                            display: false, // Ocultar eje Y (ya tenemos los textos grandes)
+                            grid: { display: false }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        }
+
+        async function saveToma(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const btn = form.querySelector('button[type="submit"]');
+            
+            const originalText = btn.textContent;
+            btn.textContent = "Guardando...";
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('save_toma.php', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.status === 'success') {
+                    alert("✅ Registro guardado correctamente");
+                    form.reset();
+                    
+                    // Pre-llenar fecha y hora actual para agilizar la siguiente captura
+                    const now = new Date();
+                    form.fecha.value = now.toISOString().split('T')[0];
+                    form.hora.value = now.toTimeString().split(' ')[0].substring(0,5);
+                    
+                    fetchTomas(); // Recargar tabla y gráfica
+                } else {
+                    alert("❌ Error: " + data.message);
+                }
+            } catch (error) {
+                alert("Error de conexión con el servidor");
+                console.error(error);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function fetchTomas() {
+            const tbody = document.getElementById('tomasTableBody');
+            try {
+                const res = await fetch('fetch_tomas.php');
+                const data = await res.json();
+                
+                tbody.innerHTML = '';
+                
+                // LÓGICA DE GRÁFICA
+                if (data.length > 0) {
+                    // Tomamos el primer registro (index 0) porque el PHP ordena por fecha DESC (el más reciente primero)
+                    const lastRecord = data[0]; 
+                    updateTankChart(lastRecord.litros);
+                } else {
+                    // Si no hay datos, gráfica en 0
+                    updateTankChart(0);
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400">No hay registros recientes.</td></tr>';
+                    return;
+                }
+
+                // LÓGICA DE TABLA
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.className = "hover:bg-purple-50 transition border-b border-slate-50";
+                    row.innerHTML = `
+                        <td class="px-4 py-3 font-bold text-slate-700 border-r border-slate-100">${item.no_muestra}</td>
+                        <td class="px-4 py-3 text-slate-600 border-r border-slate-100">${item.fecha}</td>
+                        <td class="px-4 py-3 text-slate-500 font-mono border-r border-slate-100">${item.hora}</td>
+                        <td class="px-4 py-3 text-right font-bold text-purple-700 bg-purple-50/30">${parseFloat(item.litros).toLocaleString('es-MX', {minimumFractionDigits:2})} L</td>
+                    `;
+                });
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-rose-500">Error al cargar datos.</td></tr>';
+            }
+        }
+    </script>
+</body>
+</html>
