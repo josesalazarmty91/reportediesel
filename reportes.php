@@ -168,7 +168,7 @@ try {
             }
 
             $sql = "SELECT 
-                        unit_number,
+                        unit_number as unit,
                         SUM(CAST(REPLACE(km_recorrido, ',', '') AS DECIMAL(10,2))) as total_km
                     FROM trip_reports
                     WHERE report_date != 'N/D' ";
@@ -193,7 +193,7 @@ try {
                     $val = floatval($row['total_km']);
                     $totalMes += $val;
                     $data[] = [
-                        'unit' => $row['unit_number'],
+                        'unit' => $row['unit'],
                         'km' => $val
                     ];
                 }
@@ -242,7 +242,7 @@ try {
             }
 
             $sql = "SELECT 
-                        u.unit_number,
+                        u.unit_number as unit,
                         SUM(COALESCE(r.litros_diesel, 0) + COALESCE(r.litros_auto, 0)) as total_fuel
                     FROM grupoam6_diesel.registros_entrada r
                     JOIN grupoam6_diesel.units u ON r.unit_id = u.id
@@ -268,7 +268,7 @@ try {
                     $val = floatval($row['total_fuel']);
                     $totalMes += $val;
                     $data[] = [
-                        'unit' => $row['unit_number'],
+                        'unit' => $row['unit'],
                         'fuel' => $val
                     ];
                 }
@@ -471,9 +471,9 @@ try {
             echo json_encode(['data' => $data, 'total_acumulado' => $totalMes]);
             exit;
 
-        // --- NUEVO: Gráfica Drill-Down (KM por Unidad en un Día específico) ---
+        // --- Gráfica Drill-Down (KM por Unidad en un Día específico) ---
         case 'getKmStatsByUnitDay':
-            $day = $_GET['day'] ?? ''; // Formato: YYYY-MM-DD
+            $day = $_GET['day'] ?? ''; 
             $fleetsStr = $_GET['fleets'] ?? ''; 
             $unitsStr = $_GET['units'] ?? '';
 
@@ -522,6 +522,87 @@ try {
             }
             
             echo json_encode(['data' => $data, 'total_acumulado' => $totalDia]);
+            exit;
+
+        // --- NUEVO: Gráfica Rendimiento Tableta (Drill-Down: Flota -> Unidad) ---
+        case 'getTabletRendimientoStats':
+            $month = $_GET['month'] ?? '';
+            $fleetsStr = $_GET['fleets'] ?? ''; 
+            $unitsStr = $_GET['units'] ?? '';
+            $groupBy = $_GET['groupBy'] ?? 'fleet'; // 'fleet' o 'unit'
+
+            $fleetFilter = "";
+            if (!empty($fleetsStr)) {
+                $fleetsArray = explode(',', $fleetsStr);
+                $cleanFleets = [];
+                foreach($fleetsArray as $f) { $cleanFleets[] = "'" . $conn->real_escape_string(trim($f)) . "'"; }
+                if(count($cleanFleets) > 0) { $fleetFilter = " AND IFNULL(f.name, 'Sin Flota') IN (" . implode(',', $cleanFleets) . ") "; }
+            }
+
+            $unitFilter = "";
+            if (!empty($unitsStr)) {
+                $unitsArray = explode(',', $unitsStr);
+                $cleanUnits = [];
+                foreach($unitsArray as $u) { $cleanUnits[] = "'" . $conn->real_escape_string(trim($u)) . "'"; }
+                if(count($cleanUnits) > 0) { $unitFilter = " AND u.unit_number IN (" . implode(',', $cleanUnits) . ") "; }
+            }
+
+            if ($groupBy === 'fleet') {
+                $select = "IFNULL(f.name, 'Sin Flota') as label";
+                $groupByClause = " GROUP BY f.id, f.name ";
+            } else {
+                $select = "u.unit_number as label";
+                $groupByClause = " GROUP BY u.unit_number ";
+            }
+
+            $sql = "SELECT 
+                        $select,
+                        SUM(CAST(REPLACE(r.km_recorridos, ',', '') AS DECIMAL(10,2))) as sum_km,
+                        SUM(COALESCE(r.litros_diesel, 0) + COALESCE(r.litros_auto, 0)) as sum_lts
+                    FROM grupoam6_diesel.registros_entrada r
+                    JOIN grupoam6_diesel.units u ON r.unit_id = u.id
+                    LEFT JOIN grupoam6_diesel.families f ON u.family_id = f.id
+                    WHERE 1=1 ";
+
+            if (!empty($month)) {
+                $safeMonth = $conn->real_escape_string($month);
+                $sql .= " AND DATE_FORMAT(r.timestamp, '%Y-%m') = '$safeMonth' ";
+            }
+
+            $sql .= $fleetFilter . $unitFilter;
+            $sql .= $groupByClause;
+
+            $result = $conn->query($sql);
+            $data = [];
+            $totalKm = 0;
+            $totalLts = 0;
+
+            if ($result) {
+                while($row = $result->fetch_assoc()) {
+                    $km = floatval($row['sum_km']);
+                    $lts = floatval($row['sum_lts']);
+                    $rendimiento = ($lts > 0) ? ($km / $lts) : 0;
+                    
+                    $totalKm += $km;
+                    $totalLts += $lts;
+
+                    // Solo enviamos los que sí tuvieron actividad
+                    if ($rendimiento > 0) {
+                        $data[] = [
+                            'label' => $row['label'],
+                            'rendimiento' => round($rendimiento, 2)
+                        ];
+                    }
+                }
+            }
+            
+            // Ordenar de mayor a menor rendimiento
+            usort($data, function($a, $b) { return $b['rendimiento'] <=> $a['rendimiento']; });
+            
+            // Promedio global exacto del total seleccionado
+            $promedioGlobal = ($totalLts > 0) ? ($totalKm / $totalLts) : 0;
+            
+            echo json_encode(['data' => $data, 'promedio' => round($promedioGlobal, 2)]);
             exit;
 
         default:

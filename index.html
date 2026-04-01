@@ -113,6 +113,9 @@
                 </button>
                 <div id="dropdown-data-consumo" class="hidden absolute top-full left-0 bg-white border border-slate-200 shadow-2xl rounded-b-lg min-w-[240px] z-[60] animate-[fade-in_0.1s_ease-out]">
                     <div class="py-1">
+                        <button id="tab-rendimiento-detalle" onclick="switchTab('rendimiento-detalle')" class="w-full text-left px-6 py-3 text-sm font-bold text-slate-700 hover:bg-blue-50 hover:text-blue-700 border-b border-slate-100 transition flex items-center gap-3">
+                            <span>⚖️</span> Rend. Detallado (Analítica)
+                        </button>
                         <button id="tab-report" onclick="switchTab('report')" class="w-full text-left px-6 py-3 text-sm text-slate-600 hover:bg-blue-50 hover:text-blue-700 border-b border-slate-50 transition flex items-center gap-3">
                             <span>🚛</span> Reporte Diesel (ECM)
                         </button>
@@ -238,6 +241,62 @@
                             </tr>
                         </thead>
                         <tbody id="dieselFullTableBody" class="bg-white divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="panel-rendimiento-detalle" class="hidden p-6 h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between md:items-end mb-6 gap-4 flex-none">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">Reporte Detallado de Rendimiento</h2>
+                        <p class="text-sm text-slate-500 mt-1">Comparativa viaje por viaje para detección de anomalías y robos.</p>
+                    </div>
+                    <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-month-rendimiento-detalle" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                            <input type="text" id="filter-unit-rendimiento-detalle" placeholder="Todas..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="fetchRendimientoDetalle()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm">Filtrar</button>
+                            <button onclick="clearRendimientoDetalleFilters()" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300 transition shadow-sm">Limpiar</button>
+                            <button onclick="downloadXLS('rendimiento-detalle')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm flex items-center gap-2"><span>📥</span> Excel</button>
+                        </div>
+                    </div>
+                    <div class="ml-auto">
+                        <span id="rendimiento-detalle-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
+                    <table class="min-w-full divide-y divide-slate-300 text-sm border-collapse">
+                        <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold h-12">
+                            <tr>
+                                <th colspan="2" class="px-4 py-2 border-r border-b text-center bg-slate-200">Datos Generales</th>
+                                <th colspan="3" class="px-4 py-2 border-r border-b text-center bg-orange-100 text-orange-900">Reporte ECM</th>
+                                <th colspan="3" class="px-4 py-2 border-r border-b text-center bg-blue-100 text-blue-900">Reporte Tableta</th>
+                                <th colspan="2" class="px-4 py-2 border-b text-center bg-slate-800 text-white">Análisis de Desviación</th>
+                            </tr>
+                            <tr>
+                                <th class="px-4 py-2 border-r bg-slate-100 sticky left-0 z-20">Unidad</th>
+                                <th class="px-4 py-2 border-r bg-slate-100">Fecha</th>
+                                
+                                <th class="px-4 py-2 border-r bg-orange-50 text-orange-900 text-right">Comb. Viaje (L)</th>
+                                <th class="px-4 py-2 border-r bg-orange-50 text-orange-900 text-right">KM Recorridos</th>
+                                <th class="px-4 py-2 border-r bg-orange-100 text-orange-900 text-right font-extrabold">Rend. (km/l)</th>
+                                
+                                <th class="px-4 py-2 border-r bg-blue-50 text-blue-900 text-right">Total Diesel (L)</th>
+                                <th class="px-4 py-2 border-r bg-blue-50 text-blue-900 text-right">KM Recorridos</th>
+                                <th class="px-4 py-2 border-r bg-blue-100 text-blue-900 text-right font-extrabold">Rend. (km/l)</th>
+
+                                <th class="px-4 py-2 border-r bg-slate-100 text-slate-800 text-right">Dif. (km/l)</th>
+                                <th class="px-4 py-2 bg-slate-200 text-slate-800 text-right font-extrabold">% Diferencia</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rendimientoDetalleTableBody" class="bg-white divide-y divide-slate-100"></tbody>
                     </table>
                 </div>
             </div>
@@ -539,13 +598,8 @@
                                 <label class="text-xs font-bold text-purple-800 uppercase">Mes:</label>
                                 <input type="month" id="filter-month-tank-balance" class="border border-purple-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-purple-400" onchange="loadTankBalanceChart()">
                             </div>
-                            <div class="text-xs text-purple-600 font-medium">
-                                * El nivel se ajusta automáticamente con cada toma física registrada.
-                            </div>
                         </div>
-                        <div class="h-[400px]">
-                            <canvas id="tankBalanceChart"></canvas>
-                        </div>
+                        <div class="h-[400px]"><canvas id="tankBalanceChart"></canvas></div>
                     </div>
                 </div>
 
@@ -623,7 +677,6 @@
                                     <label class="text-xs font-bold text-amber-900 uppercase">Mes:</label>
                                     <input type="month" id="filter-month-fleet" class="border border-amber-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-amber-400" onchange="updateFleetFilters()">
                                 </div>
-                                
                                 <div class="relative group">
                                     <button onclick="document.getElementById('fleet-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-amber-300 text-amber-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-amber-50">
                                         <span>Filtro Flota</span><span class="text-xs">▼</span>
@@ -637,7 +690,6 @@
                                         <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadFleetChart(); document.getElementById('fleet-dropdown').classList.add('hidden')" class="text-xs bg-amber-600 text-white px-2 py-1 rounded hover:bg-amber-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                                 <div class="relative group">
                                     <button onclick="document.getElementById('fleet-unit-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-amber-300 text-amber-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-amber-50">
                                         <span>Filtro Unidad</span><span class="text-xs">▼</span>
@@ -678,7 +730,6 @@
                                         ⬅️ Volver a Flotas
                                     </button>
                                 </div>
-                                
                                 <div class="relative group">
                                     <button onclick="document.getElementById('km-fleet-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-teal-300 text-teal-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-teal-50">
                                         <span>Filtro Flota</span><span class="text-xs">▼</span>
@@ -692,7 +743,6 @@
                                         <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmFleetChart(); document.getElementById('km-fleet-dropdown').classList.add('hidden')" class="text-xs bg-teal-600 text-white px-2 py-1 rounded hover:bg-teal-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                                 <div class="relative group">
                                     <button onclick="document.getElementById('km-fleet-unit-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-teal-300 text-teal-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-teal-50">
                                         <span>Filtro Unidad</span><span class="text-xs">▼</span>
@@ -717,7 +767,7 @@
                     </div>
                 </div>
 
-     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
                     <button onclick="toggleChart('chart-km-forecast-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
                         <span id="km-forecast-title" class="font-bold text-blue-700 flex items-center gap-2">📈 Forecast vs KM Recorridos Diarios (Tableta)</span>
                         <span class="arrow-icon text-slate-400">▼</span>
@@ -786,7 +836,6 @@
                                         ⬅️ Volver
                                     </button>
                                 </div>
-                                
                                 <div class="relative group">
                                     <button onclick="document.getElementById('km-budget-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-orange-300 text-orange-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-orange-50">
                                         <span>Filtro Flota</span><span class="text-xs">▼</span>
@@ -800,7 +849,6 @@
                                         <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmBudgetChart(); document.getElementById('km-budget-dropdown').classList.add('hidden')" class="text-xs bg-orange-600 text-white px-2 py-1 rounded hover:bg-orange-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                                 <div class="relative group">
                                     <button onclick="document.getElementById('km-budget-unit-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-orange-300 text-orange-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-orange-50">
                                         <span>Filtro Unidad</span><span class="text-xs">▼</span>
@@ -814,7 +862,6 @@
                                         <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmBudgetChart(); document.getElementById('km-budget-unit-dropdown').classList.add('hidden')" class="text-xs bg-orange-600 text-white px-2 py-1 rounded hover:bg-orange-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                             </div>
                             <div class="bg-white px-4 py-2 rounded shadow-sm border border-orange-100 flex items-center gap-2 ml-auto">
                                 <span class="text-xs text-slate-500 uppercase font-bold">Acumulado del Mes:</span>
@@ -822,65 +869,62 @@
                                 <span class="text-xs text-orange-400">km</span>
                             </div>
                         </div>
-                        <div class="h-[500px]"><canvas id="kmBudgetChart"></canvas></div>
-                        <p class="text-xs text-center text-slate-400 mt-2 italic">* Haz clic en las barras coloreadas para profundizar en el reporte.</p>
+                        <div class="h-[400px]"><canvas id="kmBudgetChart"></canvas></div>
+                        <p class="text-xs text-center text-slate-400 mt-2 italic">* Haz clic en la barra "KM Recorridos" o en las barras de "Flota" para profundizar en el reporte.</p>
                     </div>
                 </div>
 
-       <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
-                    <button onclick="toggleChart('chart-km-budget-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
-                        <span id="km-budget-title-text" class="font-bold text-fuchsia-700 flex items-center gap-2">🎯 Presupuesto Mensual: 800,000 km</span>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden flex-none mt-6">
+                    <button onclick="toggleChart('chart-rendimiento-container', this)" class="w-full flex justify-between items-center p-4 bg-slate-50 hover:bg-slate-100 transition border-b border-slate-200">
+                        <span id="rendimiento-title-text" class="font-bold text-cyan-700 flex items-center gap-2">🚀 Rendimiento Tableta por Flota</span>
                         <span class="arrow-icon text-slate-400">▼</span>
                     </button>
-                    <div id="chart-km-budget-container" class="chart-content expanded p-4">
-                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4 bg-fuchsia-50/50 p-3 rounded-lg border border-fuchsia-100">
+                    <div id="chart-rendimiento-container" class="chart-content expanded p-4">
+                        <div class="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4 bg-cyan-50/50 p-3 rounded-lg border border-cyan-100">
                             <div class="flex flex-wrap items-center gap-4 w-full md:w-auto">
                                 <div class="flex items-center gap-2">
-                                    <label class="text-xs font-bold text-fuchsia-900 uppercase">Mes:</label>
-                                    <input type="month" id="filter-month-km-budget" class="border border-fuchsia-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-fuchsia-400" onchange="updateKmBudgetFilters()">
+                                    <label class="text-xs font-bold text-cyan-900 uppercase">Mes:</label>
+                                    <input type="month" id="filter-month-rendimiento" class="border border-cyan-200 rounded text-sm px-2 py-1 outline-none focus:ring-2 focus:ring-cyan-400" onchange="updateRendimientoFilters()">
                                     
-                                    <button id="btn-back-km-budget" onclick="backKmBudget()" class="hidden ml-2 bg-white border border-fuchsia-300 hover:bg-fuchsia-50 text-fuchsia-700 text-xs font-bold py-1.5 px-3 rounded shadow-sm transition">
-                                        ⬅️ Volver
+                                    <button id="btn-back-rendimiento" onclick="backRendimiento()" class="hidden ml-2 bg-white border border-cyan-300 hover:bg-cyan-50 text-cyan-700 text-xs font-bold py-1.5 px-3 rounded shadow-sm transition">
+                                        ⬅️ Volver a Flotas
                                     </button>
                                 </div>
-                                
                                 <div class="relative group">
-                                    <button onclick="document.getElementById('km-budget-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-fuchsia-300 text-fuchsia-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-fuchsia-50">
+                                    <button onclick="document.getElementById('rendimiento-fleet-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-cyan-300 text-cyan-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-cyan-50">
                                         <span>Filtro Flota</span><span class="text-xs">▼</span>
                                     </button>
-                                    <div id="km-budget-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
+                                    <div id="rendimiento-fleet-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
                                         <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
-                                            <input type="checkbox" id="check-all-km-budget-fleets" class="rounded text-fuchsia-600 focus:ring-fuchsia-500" onclick="document.querySelectorAll('.km-budget-cb').forEach(cb => cb.checked = this.checked); renderKmBudgetUnits();">
-                                            <label for="check-all-km-budget-fleets" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label>
+                                            <input type="checkbox" id="check-all-rendimiento-fleets" class="rounded text-cyan-600 focus:ring-cyan-500" onclick="document.querySelectorAll('.rendimiento-fleet-cb').forEach(cb => cb.checked = this.checked); renderRendimientoUnits();">
+                                            <label for="check-all-rendimiento-fleets" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label>
                                         </div>
-                                        <div id="km-budget-checkbox-list" class="space-y-1"></div>
-                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmBudgetChart(); document.getElementById('km-budget-dropdown').classList.add('hidden')" class="text-xs bg-fuchsia-600 text-white px-2 py-1 rounded hover:bg-fuchsia-700">Aplicar</button></div>
+                                        <div id="rendimiento-fleet-list" class="space-y-1"></div>
+                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadRendimientoChart(); document.getElementById('rendimiento-fleet-dropdown').classList.add('hidden')" class="text-xs bg-cyan-600 text-white px-2 py-1 rounded hover:bg-cyan-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                                 <div class="relative group">
-                                    <button onclick="document.getElementById('km-budget-unit-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-fuchsia-300 text-fuchsia-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-fuchsia-50">
+                                    <button onclick="document.getElementById('rendimiento-unit-dropdown').classList.toggle('hidden')" class="flex items-center gap-2 bg-white border border-cyan-300 text-cyan-800 text-sm font-bold py-1 px-3 rounded shadow-sm hover:bg-cyan-50">
                                         <span>Filtro Unidad</span><span class="text-xs">▼</span>
                                     </button>
-                                    <div id="km-budget-unit-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
+                                    <div id="rendimiento-unit-dropdown" class="hidden absolute top-full left-0 mt-1 w-64 bg-white border border-slate-300 shadow-xl rounded-lg z-50 max-h-60 overflow-y-auto p-2">
                                         <div class="flex items-center gap-2 mb-2 pb-2 border-b border-slate-100">
-                                            <input type="checkbox" id="check-all-km-budget-units" class="rounded text-fuchsia-600 focus:ring-fuchsia-500" onclick="document.querySelectorAll('.km-budget-unit-cb').forEach(cb => cb.checked = this.checked)">
-                                            <label for="check-all-km-budget-units" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label>
+                                            <input type="checkbox" id="check-all-rendimiento-units" class="rounded text-cyan-600 focus:ring-cyan-500" onclick="document.querySelectorAll('.rendimiento-unit-cb').forEach(cb => cb.checked = this.checked)">
+                                            <label for="check-all-rendimiento-units" class="text-xs font-bold text-slate-600 cursor-pointer select-none">Seleccionar Todo</label>
                                         </div>
-                                        <div id="km-budget-unit-checkbox-list" class="space-y-1"></div>
-                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadKmBudgetChart(); document.getElementById('km-budget-unit-dropdown').classList.add('hidden')" class="text-xs bg-fuchsia-600 text-white px-2 py-1 rounded hover:bg-fuchsia-700">Aplicar</button></div>
+                                        <div id="rendimiento-unit-list" class="space-y-1"></div>
+                                        <div class="mt-2 pt-2 border-t border-slate-100 text-right"><button onclick="loadRendimientoChart(); document.getElementById('rendimiento-unit-dropdown').classList.add('hidden')" class="text-xs bg-cyan-600 text-white px-2 py-1 rounded hover:bg-cyan-700">Aplicar</button></div>
                                     </div>
                                 </div>
-
                             </div>
-                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-fuchsia-100 flex items-center gap-2 ml-auto">
-                                <span class="text-xs text-slate-500 uppercase font-bold">Acumulado del Mes:</span>
-                                <span id="km-budget-month-total" class="text-lg font-bold text-fuchsia-600">0</span>
-                                <span class="text-xs text-fuchsia-400">km</span>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border border-cyan-100 flex items-center gap-2 ml-auto">
+                                <span class="text-xs text-slate-500 uppercase font-bold">Promedio Global (Selección):</span>
+                                <span id="rendimiento-promedio-text" class="text-lg font-bold text-cyan-600">0.00</span>
+                                <span class="text-xs text-cyan-500 font-bold">km/l</span>
                             </div>
                         </div>
-                        <div class="h-[400px]"><canvas id="kmBudgetChart"></canvas></div>
-                        <p class="text-xs text-center text-slate-400 mt-2 italic">* Haz clic en la sección "KM Recorridos" o en las "Flotas" para profundizar en el reporte.</p>
+                        <div class="h-[500px]"><canvas id="rendimientoChart"></canvas></div>
+                        <p class="text-xs text-center text-slate-400 mt-2 italic">* Haz clic en una barra de Flota para ver el rendimiento por Unidad.</p>
                     </div>
                 </div>
 
@@ -1289,8 +1333,8 @@
             </form>
         </div>
     </div>
-   <script>
-        // --- CONSTANTES DE ESTILO (ACTUALIZADAS PARA STICKY) ---
+    <script>
+        // --- CONSTANTES DE ESTILO ---
         const STYLE_ID = 'px-3 py-2 whitespace-nowrap text-slate-600 bg-slate-100 font-bold border-r border-slate-300 sticky left-0 z-20 w-[70px]';
         const STYLE_CONCILIADO = 'px-3 py-2 whitespace-nowrap text-center bg-white border-r border-slate-200 sticky left-[70px] z-20 w-[90px]';
         const STYLE_XML = 'cell-num px-3 py-2 text-slate-600 bg-orange-50/50 border-r border-orange-100';
@@ -1337,14 +1381,14 @@
         let kmFleetChartInstance = null;
         let kmForecastChartInstance = null; 
         let kmBudgetChartInstance = null; 
+        let rendimientoChartInstance = null; 
         
-        // Mapeo dinámico para los filtros cruzados Flota -> Unidad
         let fleetFilterData = []; 
         let kmFleetFilterData = [];
         let kmForecastFilterData = [];
         let kmBudgetFilterData = [];
+        let rendimientoFilterData = []; 
 
-        // Estados para Drill-down de gráficas interactivas
         let kmFleetViewMode = 'fleet'; 
         let kmFleetSelectedFleet = null;
         
@@ -1354,6 +1398,9 @@
         let kmBudgetViewMode = 'total'; 
         let kmBudgetSelectedFleet = null;
         const BUDGET_KM = 800000;
+
+        let rendimientoViewMode = 'fleet'; 
+        let rendimientoSelectedFleet = null;
 
         window.cachedDieselReports = [];
         window.cachedTabletReports = [];
@@ -1370,12 +1417,15 @@
             "diesel-entry": document.getElementById('panel-diesel-entry'),
             upload: document.getElementById('panel-upload'),
             "tomas": document.getElementById('panel-tomas'),
-            "almacen": document.getElementById('panel-almacen')
+            "almacen": document.getElementById('panel-almacen'),
+            "rendimiento-detalle": document.getElementById('panel-rendimiento-detalle')
         };
 
         // --- NAVEGACIÓN ---
         function switchTab(tabId) {
-            Object.values(tabPanels).forEach(p => p.classList.add('hidden'));
+            Object.values(tabPanels).forEach(p => {
+                if(p) p.classList.add('hidden');
+            });
             
             const navButtons = document.querySelectorAll('nav button:not(#btn-data-consumo)');
             navButtons.forEach(b => {
@@ -1383,20 +1433,21 @@
             });
 
             const btnData = document.getElementById('btn-data-consumo');
-            btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+            if(btnData) btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
 
             if(tabPanels[tabId]) tabPanels[tabId].classList.remove('hidden');
 
             const activeStyle = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
 
-            if (['report', 'tablet', 'manzanillo'].includes(tabId)) {
-                btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
+            if (['report', 'tablet', 'manzanillo', 'rendimiento-detalle'].includes(tabId)) {
+                if(btnData) btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
             } else {
                 const btn = document.getElementById('tab-' + tabId);
                 if(btn) btn.className = activeStyle;
             }
 
-            document.getElementById('dropdown-data-consumo').classList.add('hidden');
+            const dropdownData = document.getElementById('dropdown-data-consumo');
+            if(dropdownData) dropdownData.classList.add('hidden');
 
             if(tabId === 'charts') loadCharts();
             if(tabId === 'manzanillo') fetchManzanillo();
@@ -1404,22 +1455,25 @@
             if(tabId === 'diesel-full') fetchNewDieselReport(); 
             if(tabId === 'tomas') fetchTomas();
             if(tabId === 'almacen') fetchEntradasAlmacen(); 
+            if(tabId === 'rendimiento-detalle') fetchRendimientoDetalle();
         }
 
         function toggleDataDropdown() {
             const d = document.getElementById('dropdown-data-consumo');
-            d.classList.toggle('hidden');
+            if(d) d.classList.toggle('hidden');
         }
 
         function toggleChart(containerId, button) {
             const container = document.getElementById(containerId);
             const icon = button.querySelector('.arrow-icon');
-            if (container.classList.contains('expanded')) {
-                container.classList.remove('expanded');
-                icon.classList.remove('rotated');
-            } else {
-                container.classList.add('expanded');
-                icon.classList.add('rotated');
+            if(container && icon) {
+                if (container.classList.contains('expanded')) {
+                    container.classList.remove('expanded');
+                    icon.classList.remove('rotated');
+                } else {
+                    container.classList.add('expanded');
+                    icon.classList.add('rotated');
+                }
             }
         }
 
@@ -1430,21 +1484,20 @@
             loadKmFleetChart(); 
             loadKmForecastChart();
             loadKmBudgetChart(); 
+            loadRendimientoChart(); 
         }
 
         // ==========================================
-        // RENDERIZADO TABLAS PRINCIPALES
+        // RENDERIZADO DE TABLAS
         // ==========================================
         function addConsolidatedRow(report, tbodyId) {
             const tbody = document.getElementById(tbodyId); 
+            if(!tbody) return;
             const row = tbody.insertRow();
             row.className = 'hover:bg-slate-50 group';
 
             const c1 = row.insertCell(); c1.textContent = report.t1_id || 'N/D'; c1.className = STYLE_ID;
-            
-            const c2 = row.insertCell(); 
-            c2.innerHTML = (report.conciliado == 1) ? '<span class="text-emerald-500 font-bold text-lg">●</span>' : '<span class="text-rose-400 font-bold text-lg">●</span>'; 
-            c2.className = STYLE_CONCILIADO;
+            const c2 = row.insertCell(); c2.innerHTML = (report.conciliado == 1) ? '<span class="text-emerald-500 font-bold text-lg">●</span>' : '<span class="text-rose-400 font-bold text-lg">●</span>'; c2.className = STYLE_CONCILIADO;
             
             const c3 = row.insertCell(); 
             let unitHtml = report.unit_number || 'N/D';
@@ -1470,8 +1523,7 @@
             const lDiesel = parseFloat(String(report.litros_diesel||0).replace(/,/g,'')) || 0;
             const lAuto = parseFloat(String(report.litros_auto||0).replace(/,/g,'')) || 0;
             const totalDieselVal = lDiesel + lAuto;
-            const cTotal = row.insertCell(); cTotal.textContent = totalDieselVal.toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1}); 
-            cTotal.className = "cell-num px-3 py-2 text-emerald-900 bg-emerald-100 font-extrabold border-r border-emerald-300 border-l-2 border-l-emerald-400";
+            const cTotal = row.insertCell(); cTotal.textContent = totalDieselVal.toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1}); cTotal.className = "cell-num px-3 py-2 text-emerald-900 bg-emerald-100 font-extrabold border-r border-emerald-300 border-l-2 border-l-emerald-400";
 
             row.insertCell().textContent = fmt(report.combustible_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
 
@@ -1488,8 +1540,7 @@
             const kmT = parseFloat(String(report.km_recorridos||0).replace(/,/g, ''));
             const cDifKm = row.insertCell(); cDifKm.textContent = (distEcm > 0) ? (((distEcm - kmT) / distEcm) * 100).toFixed(1) + '%' : '0.0%'; cDifKm.className = STYLE_CALC;
             const cDifLtPerc = row.insertCell(); cDifLtPerc.textContent = (fuelV > 0) ? (((totalDieselVal - fuelV) / fuelV) * 100).toFixed(1) + '%' : '0.0%'; cDifLtPerc.className = STYLE_CALC;
-            const cDifLtAbs = row.insertCell(); const difAbs = (totalDieselVal - fuelV); cDifLtAbs.textContent = difAbs.toFixed(1);
-            cDifLtAbs.className = (Math.abs(difAbs) > 20) ? "cell-num px-3 py-2 text-rose-600 bg-rose-100 font-bold border-r border-rose-200" : STYLE_CALC;
+            const cDifLtAbs = row.insertCell(); const difAbs = (totalDieselVal - fuelV); cDifLtAbs.textContent = difAbs.toFixed(1); cDifLtAbs.className = (Math.abs(difAbs) > 20) ? "cell-num px-3 py-2 text-rose-600 bg-rose-100 font-bold border-r border-rose-200" : STYLE_CALC;
 
             row.insertCell().textContent = fmt(report.tiempo_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
             const tMan = parseFloat(String(report.tiempo_manejando||0).replace(/,/g, ''));
@@ -1517,6 +1568,7 @@
 
         async function fetchConsolidatedReports(m='', u='') {
             const tbody = document.getElementById('consolidatedTableBody');
+            if(!tbody) return;
             tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Consultando base de datos...</td></tr>';
             try {
                 const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&sort=${currentConsolidatedSort}&t=${Date.now()}`);
@@ -1529,9 +1581,13 @@
         }
 
         async function fetchNewDieselReport() {
-            const m = document.getElementById('filter-month-diesel-full').value;
-            const u = document.getElementById('filter-unit-diesel-full').value;
+            const elM = document.getElementById('filter-month-diesel-full');
+            const elU = document.getElementById('filter-unit-diesel-full');
             const tbody = document.getElementById('dieselFullTableBody');
+            if(!elM || !elU || !tbody) return;
+
+            const m = elM.value;
+            const u = elU.value;
             tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Generando Reporte Maestro...</td></tr>';
             
             try {
@@ -1543,7 +1599,8 @@
                 } else {
                     data.forEach(r => addConsolidatedRow(r, 'dieselFullTableBody'));
                 }
-                document.getElementById('diesel-full-count').textContent = `${data.length} registros`;
+                const cnt = document.getElementById('diesel-full-count');
+                if(cnt) cnt.textContent = `${data.length} registros`;
             } catch(e) {
                 console.error(e);
                 tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-rose-500 font-bold">Error de conexión con el servidor.</td></tr>';
@@ -1552,16 +1609,103 @@
 
         function clearNewDieselReport() {
             const m = new Date().toISOString().slice(0, 7);
-            document.getElementById('filter-month-diesel-full').value = m;
-            document.getElementById('filter-unit-diesel-full').value = '';
+            const elM = document.getElementById('filter-month-diesel-full');
+            const elU = document.getElementById('filter-unit-diesel-full');
+            if(elM) elM.value = m;
+            if(elU) elU.value = '';
             fetchNewDieselReport();
         }
 
         // ==========================================
-        // FUNCIONES DE ECM Y TABLAS
+        // 1. REPORTE: RENDIMIENTO DETALLADO
+        // ==========================================
+        async function fetchRendimientoDetalle() {
+            const elM = document.getElementById('filter-month-rendimiento-detalle');
+            const elU = document.getElementById('filter-unit-rendimiento-detalle');
+            const tbody = document.getElementById('rendimientoDetalleTableBody');
+            
+            if(!elM || !elU || !tbody) return;
+
+            const m = elM.value;
+            const u = elU.value;
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Analizando discrepancias de rendimiento...</td></tr>';
+            
+            try {
+                const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                let processedData = [];
+                
+                data.forEach(r => {
+                    const ecmKm = parseFloat(String(r.km_recorrido||0).replace(/,/g,'')) || 0;
+                    const ecmFuel = parseFloat(String(r.combustible_viaje||0).replace(/,/g,'')) || 0;
+                    const ecmRend = ecmFuel > 0 ? (ecmKm / ecmFuel) : 0;
+                    
+                    const tabKm = parseFloat(String(r.km_recorridos||0).replace(/,/g,'')) || 0;
+                    const tabFuelD = parseFloat(String(r.litros_diesel||0).replace(/,/g,'')) || 0;
+                    const tabFuelV = parseFloat(String(r.litros_auto||0).replace(/,/g,'')) || 0;
+                    const tabFuel = tabFuelD + tabFuelV;
+                    const tabRend = tabFuel > 0 ? (tabKm / tabFuel) : 0;
+                    
+                    const diffAbs = Math.abs(ecmRend - tabRend);
+                    let diffPerc = 0;
+                    if (ecmRend > 0) { diffPerc = (Math.abs(ecmRend - tabRend) / ecmRend) * 100; } 
+                    else if (tabRend > 0) { diffPerc = 100; }
+
+                    if (ecmRend > 0 || tabRend > 0) {
+                        processedData.push({
+                            unit: r.unit_number || 'N/D', date: r.t1_report_date || 'N/D',
+                            ecmKm, ecmFuel, ecmRend, tabKm, tabFuel, tabRend, diffAbs, diffPerc
+                        });
+                    }
+                });
+
+                processedData.sort((a, b) => b.diffPerc - a.diffPerc);
+                tbody.innerHTML = '';
+                if(processedData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-slate-400">No hay datos suficientes para el análisis.</td></tr>';
+                } else {
+                    processedData.forEach(item => {
+                        const row = tbody.insertRow();
+                        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+                        let bgWarning = '', textWarning = 'text-slate-600';
+                        if (item.diffPerc > 20) { bgWarning = 'bg-rose-50'; textWarning = 'text-rose-600 font-extrabold'; } 
+                        else if (item.diffPerc > 10) { bgWarning = 'bg-amber-50'; textWarning = 'text-amber-600 font-bold'; }
+
+                        row.innerHTML = `
+                            <td class="px-4 py-2 border-r border-slate-200 font-bold text-slate-700 sticky left-0 bg-white z-10 w-[100px] shadow-sm">${item.unit}</td>
+                            <td class="px-4 py-2 border-r border-slate-200 text-slate-500 text-xs">${item.date}</td>
+                            <td class="px-4 py-2 border-r border-orange-100 text-right text-orange-800 bg-orange-50/30 font-mono">${item.ecmFuel.toLocaleString('es-MX', {minimumFractionDigits:1})}</td>
+                            <td class="px-4 py-2 border-r border-orange-100 text-right text-orange-800 bg-orange-50/30 font-mono">${item.ecmKm.toLocaleString('es-MX', {maximumFractionDigits:0})}</td>
+                            <td class="px-4 py-2 border-r border-orange-200 text-right text-orange-900 bg-orange-100/50 font-extrabold font-mono">${item.ecmRend.toFixed(2)}</td>
+                            <td class="px-4 py-2 border-r border-blue-100 text-right text-blue-800 bg-blue-50/30 font-mono">${item.tabFuel.toLocaleString('es-MX', {minimumFractionDigits:1})}</td>
+                            <td class="px-4 py-2 border-r border-blue-100 text-right text-blue-800 bg-blue-50/30 font-mono">${item.tabKm.toLocaleString('es-MX', {maximumFractionDigits:0})}</td>
+                            <td class="px-4 py-2 border-r border-blue-200 text-right text-blue-900 bg-blue-100/50 font-extrabold font-mono">${item.tabRend.toFixed(2)}</td>
+                            <td class="px-4 py-2 border-r border-slate-200 text-right text-slate-700 font-mono ${bgWarning}">${item.diffAbs.toFixed(2)}</td>
+                            <td class="px-4 py-2 text-right font-mono ${textWarning} ${bgWarning}">${item.diffPerc.toFixed(1)}%</td>
+                        `;
+                    });
+                }
+                const cnt = document.getElementById('rendimiento-detalle-count');
+                if(cnt) cnt.textContent = `${processedData.length} registros analizados`;
+            } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-rose-500 font-bold">Error de conexión.</td></tr>'; }
+        }
+
+        function clearRendimientoDetalleFilters() {
+            const m = new Date().toISOString().slice(0, 7);
+            const elM = document.getElementById('filter-month-rendimiento-detalle');
+            const elU = document.getElementById('filter-unit-rendimiento-detalle');
+            if(elM) elM.value = m;
+            if(elU) elU.value = '';
+            fetchRendimientoDetalle();
+        }
+
+        // ==========================================
+        // ECM & TABLETA FUNCIONES
         // ==========================================
         async function fetchReports(m='') {
-            const tbody = document.getElementById('reportTableBody'); tbody.innerHTML = '';
+            const tbody = document.getElementById('reportTableBody'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
             try {
                 const res = await fetch(`fetch_reports.php?month=${m}`);
                 const data = await res.json();
@@ -1571,27 +1715,23 @@
                 data.forEach(r => {
                     tKm += parseFloat(String(r.km_recorrido||0).replace(/,/g,'')); 
                     tFl += parseFloat(String(r.combustible_viaje||0).replace(/,/g,''));
-                    
                     const row = tbody.insertRow(); 
                     row.className = 'hover:bg-orange-50/50 group';
-                    
                     const btnEdit = `<button onclick='openEditDiesel(${JSON.stringify(r)})' class="text-slate-400 hover:text-orange-600 transition transform hover:scale-110">✏️</button>`;
-
                     let unitHtml = r.unit_number;
-                    if (r.unit_number === 'PENDIENTE' || r.unit_number === 'N/D') {
-                        unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${r.id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`;
-                    }
+                    if (r.unit_number === 'PENDIENTE' || r.unit_number === 'N/D') { unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${r.id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`; }
 
                     row.innerHTML = `<td class="px-3 py-2 border-r text-center bg-white">${btnEdit}</td><td class="px-3 py-2 border-r font-medium text-slate-700">${r.id}</td><td class="px-3 py-2 border-r font-medium text-slate-700 sticky left-0 bg-orange-100 z-10">${unitHtml}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_date}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_time}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_hubodometro)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.travesia_km)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.km_recorrido)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.combustible_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_conducida)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_cambio_bajo)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.def_usado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_crucero)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rpm_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_promedio)}</td><td class="px-3 py-2 border-r text-right bg-emerald-50 text-emerald-800 font-bold">${fmt(r.rendimiento_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rendimiento_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.factor_carga)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_frenado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_neutro_coasting)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_pto)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_pto)}</td><td class="px-3 py-2 text-xs text-slate-400 italic">${r.file_name}</td>`;
                 });
-                document.getElementById('report-count').textContent = `${data.length} registros`;
-                document.getElementById('kpi-total-km').textContent = tKm.toLocaleString('es-MX', {maximumFractionDigits:0});
-                document.getElementById('kpi-total-fuel').textContent = tFl.toLocaleString('es-MX', {maximumFractionDigits:1}) + ' L';
+                if(document.getElementById('report-count')) document.getElementById('report-count').textContent = `${data.length} registros`;
+                if(document.getElementById('kpi-total-km')) document.getElementById('kpi-total-km').textContent = tKm.toLocaleString('es-MX', {maximumFractionDigits:0});
+                if(document.getElementById('kpi-total-fuel')) document.getElementById('kpi-total-fuel').textContent = tFl.toLocaleString('es-MX', {maximumFractionDigits:1}) + ' L';
             } catch(e) { console.error(e); }
         }
 
         async function fetchTabletReports(m='') {
             const tbody = document.getElementById('tabletTableBody'); 
+            if(!tbody) return;
             tbody.innerHTML = '';
             try {
                 const res = await fetch(`fetch_tablet_reports.php?month=${m}`);
@@ -1600,16 +1740,13 @@
                 data.forEach(r => {
                     const row = tbody.insertRow(); 
                     row.className = 'hover:bg-blue-50/50 group';
-
                     const kmRec = parseFloat(String(r.km_recorridos || 0).replace(/,/g, '')) || 0;
                     const ltsDiesel = parseFloat(String(r.litros_diesel || 0).replace(/,/g, '')) || 0;
                     const ltsVales = parseFloat(String(r.litros_auto || 0).replace(/,/g, '')) || 0;
                     const totalDiesel = ltsDiesel + ltsVales;
                     const rendReal = (totalDiesel > 0) ? (kmRec / totalDiesel) : 0;
-
                     const rString = JSON.stringify(r).replace(/'/g, "&#39;");
                     const btnEdit = `<button onclick='openEditTablet(${rString})' class="text-slate-400 hover:text-blue-600 transition transform hover:scale-110">✏️</button>`;
-
                     const styleCalculated = "px-3 py-2 border-r text-right font-bold text-emerald-800 bg-emerald-100";
                     const styleRendimiento = "px-3 py-2 border-r text-right font-extrabold text-emerald-900 bg-emerald-200 border-l-2 border-emerald-300";
 
@@ -1623,195 +1760,122 @@
             if (newUnit && newUnit.trim() !== "") {
                 try {
                     await fetch('update_unit.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: reportId, unit: newUnit.trim()}) });
-                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
-                    fetchReports(document.getElementById('filter-month-report').value);
+                    const mC = document.getElementById('filter-month-consolidated') ? document.getElementById('filter-month-consolidated').value : '';
+                    const mR = document.getElementById('filter-month-report') ? document.getElementById('filter-month-report').value : '';
+                    fetchConsolidatedReports(mC);
+                    fetchReports(mR);
+                    fetchRendimientoDetalle();
                 } catch(e) { alert("Error de conexión"); }
             }
         }
 
         // ==========================================
-        // 1. DIESEL POR FLOTA
+        // GRÁFICAS: DIESEL POR FLOTA
         // ==========================================
         async function updateFleetFilters() {
-            const m = document.getElementById('filter-month-fleet').value;
+            const elM = document.getElementById('filter-month-fleet');
+            if(!elM) return;
+            const m = elM.value;
             const fleetList = document.getElementById('fleet-checkbox-list');
-            
             fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
-
             try {
                 const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
                 const data = await res.json();
-                
                 fleetFilterData = data.units || []; 
                 fleetList.innerHTML = '';
-
                 if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
-                
                 data.fleets.forEach(f => {
-                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${f}" class="fleet-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked onchange="renderFleetUnits()">
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label>
-                    </div>`;
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="fleet-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked onchange="renderFleetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
                 });
-
                 document.getElementById('check-all-fleets').checked = true;
                 renderFleetUnits(true); 
-                
-            } catch(e) {
-                fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>';
-            }
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
         }
 
         function renderFleetUnits(autoLoad = false) {
             const unitList = document.getElementById('fleet-unit-checkbox-list');
             const activeFleets = Array.from(document.querySelectorAll('.fleet-cb:checked')).map(cb => cb.value);
-            
             unitList.innerHTML = '';
-            
             const filteredUnits = fleetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
             const uniqueUnits = [...new Set(filteredUnits)].sort();
-
             if(uniqueUnits.length === 0) {
                 unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
             } else {
                 uniqueUnits.forEach(u => {
-                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${u}" class="fleet-unit-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked>
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label>
-                    </div>`;
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="fleet-unit-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
                 });
             }
-            
             document.getElementById('check-all-fleet-units').checked = true;
             if(autoLoad) loadFleetChart();
         }
 
         async function loadFleetChart() {
-            const m = document.getElementById('filter-month-fleet').value;
+            const elM = document.getElementById('filter-month-fleet');
+            if(!elM) return;
+            const m = elM.value;
             const fleetCbs = document.querySelectorAll('.fleet-cb:checked');
             const unitCbs = document.querySelectorAll('.fleet-unit-cb:checked');
-            
             const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
             const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
-
             if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
                 if(fleetChartInstance) fleetChartInstance.destroy();
                 document.getElementById('fleet-month-total').textContent = "0.0";
                 return; 
             }
-
             try {
                 const fleetsParam = encodeURIComponent(selectedFleets.join(','));
                 const unitsParam = encodeURIComponent(selectedUnits.join(','));
-                
                 const res = await fetch(`reportes.php?action=getDieselStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
                 const response = await res.json();
-                
                 document.getElementById('fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1});
                 const data = response.data || [];
-                
                 if (fleetChartInstance) fleetChartInstance.destroy();
                 const ctx = document.getElementById('fleetChart').getContext('2d');
-                
                 fleetChartInstance = new Chart(ctx, {
                     type: 'bar',
-                    data: {
-                        labels: data.map(d => d.flota),
-                        datasets: [{ 
-                            label: 'Consumo Diesel (L)', 
-                            data: data.map(d => d.fuel), 
-                            backgroundColor: 'rgba(245, 158, 11, 0.7)', 
-                            borderColor: 'rgba(217, 119, 6, 1)', 
-                            borderWidth: 1, 
-                            borderRadius: 6 
-                        }]
-                    },
-                    options: { 
-                        responsive: true, 
-                        maintainAspectRatio: false, 
-                        plugins: { 
-                            legend: { display: false }, 
-                            tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } 
-                        }, 
-                        scales: { y: { beginAtZero: true, title: { display: true, text: 'Litros (L)' } } } 
-                    },
-                    plugins: [{ 
-                        id: 'fleetLabels', 
-                        afterDatasetsDraw(chart) { 
-                            const { ctx } = chart; 
-                            chart.data.datasets.forEach((dataset, i) => { 
-                                const meta = chart.getDatasetMeta(i); 
-                                meta.data.forEach((bar, index) => { 
-                                    const value = dataset.data[index]; 
-                                    if(value > 0){ 
-                                        const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' L'; 
-                                        ctx.fillStyle = '#78350f'; 
-                                        ctx.font = 'bold 11px sans-serif'; 
-                                        ctx.textAlign = 'center'; 
-                                        ctx.textBaseline = 'bottom'; 
-                                        ctx.fillText(valueStr, bar.x, bar.y - 5); 
-                                    } 
-                                }); 
-                            }); 
-                        } 
-                    }]
+                    data: { labels: data.map(d => d.flota), datasets: [{ label: 'Consumo Diesel (L)', data: data.map(d => d.fuel), backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: 'rgba(217, 119, 6, 1)', borderWidth: 1, borderRadius: 6 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Litros (L)' } } } },
+                    plugins: [{ id: 'fleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' L'; ctx.fillStyle = '#78350f'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                 });
             } catch(e) { console.error("Error chart Flota", e); }
         }
 
         // ==========================================
-        // 2. KM RECORRIDOS POR FLOTA (CON DRILL-DOWN)
+        // GRÁFICAS: KM RECORRIDOS POR FLOTA
         // ==========================================
         async function updateKmFleetFilters() {
-            const m = document.getElementById('filter-month-km-fleet').value;
+            const elM = document.getElementById('filter-month-km-fleet');
+            if(!elM) return;
+            const m = elM.value;
             const fleetList = document.getElementById('km-fleet-checkbox-list');
-            
             fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
-
             try {
                 const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
                 const data = await res.json();
-                
                 kmFleetFilterData = data.units || []; 
                 fleetList.innerHTML = '';
-
                 if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
-                
                 data.fleets.forEach(f => {
-                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${f}" class="km-fleet-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked onchange="renderKmFleetUnits()">
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label>
-                    </div>`;
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-fleet-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked onchange="renderKmFleetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
                 });
-
                 document.getElementById('check-all-km-fleets').checked = true;
                 renderKmFleetUnits(true); 
-                
-            } catch(e) {
-                fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>';
-            }
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
         }
 
         function renderKmFleetUnits(autoLoad = false) {
             const unitList = document.getElementById('km-fleet-unit-checkbox-list');
             const activeFleets = Array.from(document.querySelectorAll('.km-fleet-cb:checked')).map(cb => cb.value);
-            
             unitList.innerHTML = '';
-            
             const filteredUnits = kmFleetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
             const uniqueUnits = [...new Set(filteredUnits)].sort();
-
             if(uniqueUnits.length === 0) {
                 unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
             } else {
                 uniqueUnits.forEach(u => {
-                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${u}" class="km-fleet-unit-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked>
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label>
-                    </div>`;
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-fleet-unit-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
                 });
             }
-            
             document.getElementById('check-all-km-fleet-units').checked = true;
             if(autoLoad) resetKmFleetView(); 
         }
@@ -1825,12 +1889,12 @@
         }
 
         async function loadKmFleetChart() {
-            const m = document.getElementById('filter-month-km-fleet').value;
-            
+            const elM = document.getElementById('filter-month-km-fleet');
+            if(!elM) return;
+            const m = elM.value;
             if (kmFleetViewMode === 'fleet') {
                 const fleetCbs = document.querySelectorAll('.km-fleet-cb:checked');
                 const unitCbs = document.querySelectorAll('.km-fleet-unit-cb:checked');
-                
                 const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
                 const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
 
@@ -1839,204 +1903,84 @@
                     document.getElementById('km-fleet-month-total').textContent = "0";
                     return; 
                 }
-
                 try {
                     const fleetsParam = encodeURIComponent(selectedFleets.join(','));
                     const unitsParam = encodeURIComponent(selectedUnits.join(','));
-                    
                     const res = await fetch(`reportes.php?action=getKmStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
                     const response = await res.json();
-                    
                     document.getElementById('km-fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
                     const data = response.data || [];
-                    
                     if (kmFleetChartInstance) kmFleetChartInstance.destroy();
                     const ctx = document.getElementById('kmFleetChart').getContext('2d');
-                    
                     kmFleetChartInstance = new Chart(ctx, {
                         type: 'bar',
-                        data: {
-                            labels: data.map(d => d.flota),
-                            datasets: [{ 
-                                label: 'KM Recorridos', 
-                                data: data.map(d => d.km), 
-                                backgroundColor: 'rgba(20, 184, 166, 0.8)', 
-                                borderColor: 'rgba(13, 148, 136, 1)', 
-                                borderWidth: 1, 
-                                borderRadius: 6,
-                                hoverBackgroundColor: 'rgba(13, 148, 136, 1)'
-                            }]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            onHover: (event, chartElement) => {
-                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
-                            },
-                            onClick: (e, activeElements) => {
-                                if (activeElements.length > 0) {
-                                    const clickedIndex = activeElements[0].index;
-                                    const clickedFleet = kmFleetChartInstance.data.labels[clickedIndex];
-                                    
-                                    kmFleetViewMode = 'unit';
-                                    kmFleetSelectedFleet = clickedFleet;
-                                    document.getElementById('btn-back-km-fleet').classList.remove('hidden');
-                                    document.getElementById('km-fleet-title').innerHTML = `🚚 KM Recorridos - Detalle de Flota: <span class="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">${clickedFleet}</span>`;
-                                    
-                                    loadKmFleetChart(); 
-                                }
-                            },
-                            plugins: { 
-                                legend: { display: false }, 
-                                tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } 
-                            }, 
-                            scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } 
-                        },
-                        plugins: [{ 
-                            id: 'kmFleetLabels', 
-                            afterDatasetsDraw(chart) { 
-                                const { ctx } = chart; 
-                                chart.data.datasets.forEach((dataset, i) => { 
-                                    const meta = chart.getDatasetMeta(i); 
-                                    meta.data.forEach((bar, index) => { 
-                                        const value = dataset.data[index]; 
-                                        if(value > 0){ 
-                                            const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; 
-                                            ctx.fillStyle = '#0f766e'; 
-                                            ctx.font = 'bold 11px sans-serif'; 
-                                            ctx.textAlign = 'center'; 
-                                            ctx.textBaseline = 'bottom'; 
-                                            ctx.fillText(valueStr, bar.x, bar.y - 5); 
-                                        } 
-                                    }); 
-                                }); 
-                            } 
-                        }]
+                        data: { labels: data.map(d => d.flota), datasets: [{ label: 'KM Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(20, 184, 166, 0.8)', borderColor: 'rgba(13, 148, 136, 1)', borderWidth: 1, borderRadius: 6, hoverBackgroundColor: 'rgba(13, 148, 136, 1)' }] },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; const clickedFleet = kmFleetChartInstance.data.labels[clickedIndex]; kmFleetViewMode = 'unit'; kmFleetSelectedFleet = clickedFleet; document.getElementById('btn-back-km-fleet').classList.remove('hidden'); document.getElementById('km-fleet-title').innerHTML = `🚚 KM Recorridos - Detalle de Flota: <span class="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">${clickedFleet}</span>`; loadKmFleetChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } },
+                        plugins: [{ id: 'kmFleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#0f766e'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
                 } catch(e) { console.error("Error chart KM Flota", e); }
-                
             } else if (kmFleetViewMode === 'unit') {
                 const unitCbs = document.querySelectorAll('.km-fleet-unit-cb:checked');
                 const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
-
-                const unitsInThisFleet = kmFleetFilterData
-                                            .filter(u => u.fleet === kmFleetSelectedFleet && selectedUnits.includes(u.unit))
-                                            .map(u => u.unit);
+                const unitsInThisFleet = kmFleetFilterData.filter(u => u.fleet === kmFleetSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
 
                 if(unitsInThisFleet.length === 0) { 
                     if(kmFleetChartInstance) kmFleetChartInstance.destroy();
                     document.getElementById('km-fleet-month-total').textContent = "0";
                     return; 
                 }
-
                 try {
                     const unitsParam = encodeURIComponent(unitsInThisFleet.join(','));
                     const res = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${unitsParam}`);
                     const response = await res.json();
-                    
                     document.getElementById('km-fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
                     const data = response.data || [];
-                    
                     if (kmFleetChartInstance) kmFleetChartInstance.destroy();
                     const ctx = document.getElementById('kmFleetChart').getContext('2d');
-                    
                     kmFleetChartInstance = new Chart(ctx, {
                         type: 'bar',
-                        data: {
-                            labels: data.map(d => d.unit),
-                            datasets: [{ 
-                                label: 'KM Recorridos', 
-                                data: data.map(d => d.km), 
-                                backgroundColor: 'rgba(14, 116, 144, 0.7)', 
-                                borderColor: 'rgba(15, 118, 110, 1)', 
-                                borderWidth: 1, 
-                                borderRadius: 4 
-                            }]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { 
-                                legend: { display: false }, 
-                                tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } 
-                            }, 
-                            scales: { 
-                                y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } },
-                                x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } }
-                            } 
-                        },
-                        plugins: [{ 
-                            id: 'kmFleetUnitLabels', 
-                            afterDatasetsDraw(chart) { 
-                                const { ctx } = chart; 
-                                chart.data.datasets.forEach((dataset, i) => { 
-                                    const meta = chart.getDatasetMeta(i); 
-                                    meta.data.forEach((bar, index) => { 
-                                        const value = dataset.data[index]; 
-                                        if(value > 0){ 
-                                            const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); 
-                                            ctx.fillStyle = '#042f2e'; 
-                                            ctx.font = 'bold 10px sans-serif'; 
-                                            ctx.textAlign = 'center'; 
-                                            ctx.textBaseline = 'bottom'; 
-                                            ctx.fillText(valueStr, bar.x, bar.y - 5); 
-                                        } 
-                                    }); 
-                                }); 
-                            } 
-                        }]
+                        data: { labels: data.map(d => d.unit), datasets: [{ label: 'KM Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(14, 116, 144, 0.7)', borderColor: 'rgba(15, 118, 110, 1)', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'kmFleetUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#042f2e'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
                 } catch(e) { console.error("Error chart KM Flota Drilldown", e); }
             }
         }
 
         // ==========================================
-        // 3. FORECAST VS KM REAL (CON DRILL-DOWN POR DÍA)
+        // GRÁFICAS: FORECAST VS KM REAL (27k)
         // ==========================================
         async function updateKmForecastFilters() {
-            const m = document.getElementById('filter-month-km-forecast').value;
+            const elM = document.getElementById('filter-month-km-forecast');
+            if(!elM) return;
+            const m = elM.value;
             const fleetList = document.getElementById('km-forecast-checkbox-list');
             fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
-
             try {
                 const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
                 const data = await res.json();
-                
                 kmForecastFilterData = data.units || []; 
                 fleetList.innerHTML = '';
-
                 if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
-                
                 data.fleets.forEach(f => {
-                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${f}" class="km-forecast-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked onchange="renderKmForecastUnits()">
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label>
-                    </div>`;
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-forecast-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked onchange="renderKmForecastUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
                 });
-
                 document.getElementById('check-all-km-forecast-fleets').checked = true;
                 renderKmForecastUnits(true); 
-            } catch(e) {
-                fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>';
-            }
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
         }
 
         function renderKmForecastUnits(autoLoad = false) {
             const unitList = document.getElementById('km-forecast-unit-checkbox-list');
             const activeFleets = Array.from(document.querySelectorAll('.km-forecast-cb:checked')).map(cb => cb.value);
-            
             unitList.innerHTML = '';
             const filteredUnits = kmForecastFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
             const uniqueUnits = [...new Set(filteredUnits)].sort();
-
             if(uniqueUnits.length === 0) {
                 unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
             } else {
                 uniqueUnits.forEach(u => {
-                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${u}" class="km-forecast-unit-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked>
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label>
-                    </div>`;
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-forecast-unit-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
                 });
             }
             document.getElementById('check-all-km-forecast-units').checked = true;
@@ -2052,7 +1996,9 @@
         }
 
         async function loadKmForecastChart() {
-            const m = document.getElementById('filter-month-km-forecast').value;
+            const elM = document.getElementById('filter-month-km-forecast');
+            if(!elM) return;
+            const m = elM.value;
             const fleetCbs = document.querySelectorAll('.km-forecast-cb:checked');
             const unitCbs = document.querySelectorAll('.km-forecast-unit-cb:checked');
             
@@ -2070,12 +2016,9 @@
                 const unitsParam = encodeURIComponent(selectedUnits.join(','));
                 
                 if (kmForecastViewMode === 'month') {
-                    // MODO 1: Vista Mensual (Día por Día)
                     const res = await fetch(`reportes.php?action=getKmForecastStats&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
                     const response = await res.json();
-                    
                     document.getElementById('km-forecast-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
-                    
                     const rawData = response.data || [];
                     const parts = m.split('-');
                     const daysInMonth = new Date(parts[0], parts[1], 0).getDate();
@@ -2092,184 +2035,74 @@
                         labels.push(String(i).padStart(2, '0')); 
                         fullDates.push(dayStr);
                         dataKm.push(dataMap[dayStr] || 0);
-                        dataForecast.push(23000); 
+                        dataForecast.push(27000); 
                     }
                     
                     if (kmForecastChartInstance) kmForecastChartInstance.destroy();
                     const ctx = document.getElementById('kmForecastChart').getContext('2d');
-                    
                     kmForecastChartInstance = new Chart(ctx, {
                         type: 'bar',
                         data: {
                             labels: labels,
                             datasets: [
-                                {
-                                    type: 'line',
-                                    label: 'Forecast (23,000 km)',
-                                    data: dataForecast,
-                                    borderColor: '#ef4444', 
-                                    backgroundColor: '#ef4444',
-                                    borderWidth: 2,
-                                    borderDash: [5, 5],
-                                    pointRadius: 0,
-                                    pointHoverRadius: 5,
-                                    fill: false,
-                                    order: 0 
-                                },
-                                { 
-                                    type: 'bar',
-                                    label: 'KM Reales', 
-                                    data: dataKm, 
-                                    backgroundColor: 'rgba(59, 130, 246, 0.7)', 
-                                    borderColor: 'rgba(37, 99, 235, 1)', 
-                                    borderWidth: 1, 
-                                    borderRadius: 4,
-                                    hoverBackgroundColor: 'rgba(37, 99, 235, 1)',
-                                    order: 1
-                                }
+                                { type: 'line', label: 'Forecast (27,000 km)', data: dataForecast, borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 5, fill: false, order: 0 },
+                                { type: 'bar', label: 'KM Reales', data: dataKm, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(37, 99, 235, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(37, 99, 235, 1)', order: 1 }
                             ]
                         },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            onHover: (event, chartElement) => {
-                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
-                            },
-                            onClick: (e, activeElements) => {
-                                if (activeElements.length > 0) {
-                                    const clickedIndex = activeElements[0].index;
-                                    kmForecastSelectedDay = fullDates[clickedIndex]; 
-                                    
-                                    kmForecastViewMode = 'day';
-                                    document.getElementById('btn-back-km-forecast').classList.remove('hidden');
-                                    document.getElementById('km-forecast-title').innerHTML = `📈 Detalle KM del Día: <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${kmForecastSelectedDay}</span>`;
-                                    
-                                    loadKmForecastChart(); 
-                                }
-                            },
-                            plugins: { 
-                                legend: { position: 'bottom' }, 
-                                tooltip: { 
-                                    callbacks: { 
-                                        label: function(context) { 
-                                            if (context.dataset.type === 'line') return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km';
-                                            return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; 
-                                        } 
-                                    } 
-                                } 
-                            }, 
-                            scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } 
-                        }
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; kmForecastSelectedDay = fullDates[clickedIndex]; kmForecastViewMode = 'day'; document.getElementById('btn-back-km-forecast').classList.remove('hidden'); document.getElementById('km-forecast-title').innerHTML = `📈 Detalle KM del Día: <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${kmForecastSelectedDay}</span>`; loadKmForecastChart(); } }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { if (context.dataset.type === 'line') return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } }
                     });
 
                 } else if (kmForecastViewMode === 'day') {
-                    // MODO 2: Vista Diaria (Unidad por Unidad en un día específico)
                     const res = await fetch(`reportes.php?action=getKmStatsByUnitDay&day=${kmForecastSelectedDay}&fleets=${fleetsParam}&units=${unitsParam}`);
                     const response = await res.json();
-                    
                     document.getElementById('km-forecast-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
                     const data = response.data || [];
-                    
                     if (kmForecastChartInstance) kmForecastChartInstance.destroy();
                     const ctx = document.getElementById('kmForecastChart').getContext('2d');
-                    
                     kmForecastChartInstance = new Chart(ctx, {
                         type: 'bar',
-                        data: {
-                            labels: data.map(d => d.unit),
-                            datasets: [{ 
-                                label: `KM Recorridos el ${kmForecastSelectedDay}`, 
-                                data: data.map(d => d.km), 
-                                backgroundColor: 'rgba(37, 99, 235, 0.8)', 
-                                borderColor: 'rgba(29, 78, 216, 1)', 
-                                borderWidth: 1, 
-                                borderRadius: 4 
-                            }]
-                        },
-                        options: { 
-                            responsive: true, 
-                            maintainAspectRatio: false, 
-                            plugins: { 
-                                legend: { display: false }, 
-                                tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } 
-                            }, 
-                            scales: { 
-                                y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } },
-                                x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } }
-                            } 
-                        },
-                        plugins: [{ 
-                            id: 'kmForecastUnitLabels', 
-                            afterDatasetsDraw(chart) { 
-                                const { ctx } = chart; 
-                                chart.data.datasets.forEach((dataset, i) => { 
-                                    const meta = chart.getDatasetMeta(i); 
-                                    meta.data.forEach((bar, index) => { 
-                                        const value = dataset.data[index]; 
-                                        if(value > 0){ 
-                                            const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); 
-                                            ctx.fillStyle = '#1e3a8a'; 
-                                            ctx.font = 'bold 10px sans-serif'; 
-                                            ctx.textAlign = 'center'; 
-                                            ctx.textBaseline = 'bottom'; 
-                                            ctx.fillText(valueStr, bar.x, bar.y - 5); 
-                                        } 
-                                    }); 
-                                }); 
-                            } 
-                        }]
+                        data: { labels: data.map(d => d.unit), datasets: [{ label: `KM Recorridos el ${kmForecastSelectedDay}`, data: data.map(d => d.km), backgroundColor: 'rgba(37, 99, 235, 0.8)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'kmForecastUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#1e3a8a'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
                 }
             } catch(e) { console.error("Error chart KM Forecast Drilldown", e); }
         }
 
         // ==========================================
-        // 4. NUEVA GRÁFICA: PRESUPUESTO MENSUAL (DONA CON DRILL-DOWN)
+        // GRÁFICAS: PRESUPUESTO MENSUAL
         // ==========================================
         async function updateKmBudgetFilters() {
-            const m = document.getElementById('filter-month-km-budget').value;
+            const elM = document.getElementById('filter-month-km-budget');
+            if(!elM) return;
+            const m = elM.value;
             const fleetList = document.getElementById('km-budget-checkbox-list');
             fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
-
             try {
                 const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
                 const data = await res.json();
-                
                 kmBudgetFilterData = data.units || []; 
                 fleetList.innerHTML = '';
-
                 if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
-                
                 data.fleets.forEach(f => {
-                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${f}" class="km-budget-cb rounded text-fuchsia-600 focus:ring-fuchsia-500 h-4 w-4" checked onchange="renderKmBudgetUnits()">
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label>
-                    </div>`;
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-budget-cb rounded text-orange-600 focus:ring-orange-500 h-4 w-4" checked onchange="renderKmBudgetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
                 });
-
                 document.getElementById('check-all-km-budget-fleets').checked = true;
                 renderKmBudgetUnits(true); 
-            } catch(e) {
-                fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>';
-            }
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
         }
 
         function renderKmBudgetUnits(autoLoad = false) {
             const unitList = document.getElementById('km-budget-unit-checkbox-list');
             const activeFleets = Array.from(document.querySelectorAll('.km-budget-cb:checked')).map(cb => cb.value);
-            
             unitList.innerHTML = '';
             const filteredUnits = kmBudgetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
             const uniqueUnits = [...new Set(filteredUnits)].sort();
-
             if(uniqueUnits.length === 0) {
                 unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
             } else {
                 uniqueUnits.forEach(u => {
-                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded">
-                        <input type="checkbox" value="${u}" class="km-budget-unit-cb rounded text-fuchsia-600 focus:ring-fuchsia-500 h-4 w-4" checked>
-                        <label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label>
-                    </div>`;
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-budget-unit-cb rounded text-orange-600 focus:ring-orange-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
                 });
             }
             document.getElementById('check-all-km-budget-units').checked = true;
@@ -2297,10 +2130,11 @@
         }
 
         async function loadKmBudgetChart() {
-            const m = document.getElementById('filter-month-km-budget').value;
+            const elM = document.getElementById('filter-month-km-budget');
+            if(!elM) return;
+            const m = elM.value;
             const fleetCbs = document.querySelectorAll('.km-budget-cb:checked');
             const unitCbs = document.querySelectorAll('.km-budget-unit-cb:checked');
-            
             const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
             const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
 
@@ -2313,8 +2147,6 @@
             try {
                 const fleetsParam = encodeURIComponent(selectedFleets.join(','));
                 const unitsParam = encodeURIComponent(selectedUnits.join(','));
-
-                // Traemos los datos agrupados por flota según los filtros seleccionados
                 const res = await fetch(`reportes.php?action=getKmStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
                 const response = await res.json();
                 const fleetData = response.data || [];
@@ -2326,134 +2158,139 @@
                 const ctx = document.getElementById('kmBudgetChart').getContext('2d');
 
                 if (kmBudgetViewMode === 'total') {
-                    // MODO 1: Dona General (Total vs 800k)
-                    const remaining = Math.max(0, BUDGET_KM - totalKm);
-                    const overBudget = totalKm > BUDGET_KM;
-
                     kmBudgetChartInstance = new Chart(ctx, {
-                        type: 'doughnut',
+                        type: 'bar',
                         data: {
-                            labels: ['KM Recorridos', overBudget ? 'Excedente' : 'Restante para Meta'],
-                            datasets: [{
-                                data: [totalKm, overBudget ? (totalKm - BUDGET_KM) : remaining],
-                                backgroundColor: ['#c026d3', '#f3e8ff'], 
-                                hoverBackgroundColor: ['#a21caf', '#e9d5ff'],
-                                borderWidth: 2,
-                                borderColor: '#ffffff'
-                            }]
+                            labels: ['Desempeño Mensual'],
+                            datasets: [
+                                { type: 'line', label: 'Presupuesto (Meta 800k)', data: [BUDGET_KM], borderColor: '#c2410c', backgroundColor: '#c2410c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 0, order: 0 },
+                                { type: 'bar', label: 'KM Recorridos', data: [totalKm], backgroundColor: 'rgba(234, 88, 12, 0.8)', borderColor: '#c2410c', borderWidth: 1, borderRadius: 6, hoverBackgroundColor: '#c2410c', order: 1 }
+                            ]
                         },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '70%',
-                            onHover: (event, chartElement) => {
-                                event.native.target.style.cursor = (chartElement[0] && chartElement[0].index === 0) ? 'pointer' : 'default';
-                            },
-                            onClick: (e, activeElements) => {
-                                if (activeElements.length > 0) {
-                                    if (activeElements[0].index === 0) { // Si hace clic en "KM Recorridos"
-                                        kmBudgetViewMode = 'fleet';
-                                        document.getElementById('btn-back-km-budget').classList.remove('hidden');
-                                        document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto: Desglose por Flota";
-                                        loadKmBudgetChart();
-                                    }
-                                }
-                            },
-                            plugins: {
-                                legend: { position: 'bottom' },
-                                tooltip: { 
-                                    callbacks: { 
-                                        label: function(context) { 
-                                            const msg = context.label + ': ' + context.parsed.toLocaleString('es-MX') + ' km';
-                                            return context.dataIndex === 0 ? msg + ' (Clic para ver flotas)' : msg; 
-                                        } 
-                                    } 
-                                }
-                            }
-                        }
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = (chartElement[0] && chartElement[0].datasetIndex === 1) ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { if (activeElements[0].datasetIndex === 1) { kmBudgetViewMode = 'fleet'; document.getElementById('btn-back-km-budget').classList.remove('hidden'); document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto: Desglose por Flota"; loadKmBudgetChart(); } } }, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { callbacks: { label: function(context) { const msg = context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; return context.datasetIndex === 1 ? msg + ' (Clic para desglose)' : msg; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Kilómetros (km)' } }, x: { ticks: { display: false } } } },
+                        plugins: [{ id: 'budgetTotalLabels', afterDatasetsDraw(chart) { const { ctx, chartArea: { left, right }, scales: { y } } = chart; const yPos = y.getPixelForValue(BUDGET_KM); ctx.save(); ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.moveTo(left, yPos); ctx.lineTo(right, yPos); ctx.lineWidth = 2; ctx.strokeStyle = '#c2410c'; ctx.stroke(); ctx.restore(); chart.data.datasets.forEach((dataset, i) => { if (dataset.type === 'line') return; const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
-
                 } else if (kmBudgetViewMode === 'fleet') {
-                    // MODO 2: Dona desglose por Flotas
                     kmBudgetChartInstance = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: fleetData.map(d => d.flota),
-                            datasets: [{
-                                data: fleetData.map(d => d.km),
-                                backgroundColor: ['#c026d3', '#86198f', '#e879f9', '#d946ef', '#701a75', '#f0abfc'],
-                                borderWidth: 2,
-                                borderColor: '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '60%',
-                            onHover: (event, chartElement) => {
-                                event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default';
-                            },
-                            onClick: (e, activeElements) => {
-                                if (activeElements.length > 0) {
-                                    const clickedIndex = activeElements[0].index;
-                                    kmBudgetSelectedFleet = kmBudgetChartInstance.data.labels[clickedIndex];
-                                    kmBudgetViewMode = 'unit';
-                                    document.getElementById('km-budget-title-text').innerHTML = `🎯 Presupuesto - Unidades de Flota: <span class="bg-fuchsia-100 text-fuchsia-800 px-2 py-1 rounded text-sm">${kmBudgetSelectedFleet}</span>`;
-                                    loadKmBudgetChart();
-                                }
-                            },
-                            plugins: {
-                                legend: { position: 'right' },
-                                tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.parsed.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } }
-                            }
-                        }
+                        type: 'bar',
+                        data: { labels: fleetData.map(d => d.flota), datasets: [{ label: 'KM Recorridos', data: fleetData.map(d => d.km), backgroundColor: 'rgba(234, 88, 12, 0.8)', borderColor: '#c2410c', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: '#c2410c' }] },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; kmBudgetSelectedFleet = kmBudgetChartInstance.data.labels[clickedIndex]; kmBudgetViewMode = 'unit'; document.getElementById('km-budget-title-text').innerHTML = `🎯 Presupuesto - Unidades de Flota: <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm">${kmBudgetSelectedFleet}</span>`; loadKmBudgetChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false } } } },
+                        plugins: [{ id: 'budgetFleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
-
                 } else if (kmBudgetViewMode === 'unit') {
-                    // MODO 3: Dona desglose por Unidades de la Flota seleccionada
-                    
-                    // Identificamos las unidades que pertenecen a la flota clicleada Y que están activas en los filtros
-                    const unitsInSelectedFleet = kmBudgetFilterData
-                        .filter(u => u.fleet === kmBudgetSelectedFleet && selectedUnits.includes(u.unit))
-                        .map(u => u.unit);
-
+                    const unitsInSelectedFleet = kmBudgetFilterData.filter(u => u.fleet === kmBudgetSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
                     const finalUnitParam = encodeURIComponent(unitsInSelectedFleet.join(','));
-                    
-                    // Llamamos al endpoint de unidades solo con las unidades filtradas
                     const resUnits = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${finalUnitParam}`);
                     const responseUnits = await resUnits.json();
                     const finalUnitData = responseUnits.data || [];
-
                     kmBudgetChartInstance = new Chart(ctx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: finalUnitData.map(d => d.unit),
-                            datasets: [{
-                                data: finalUnitData.map(d => d.km),
-                                backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316', '#14b8a6', '#6366f1', '#ec4899'],
-                                borderWidth: 1,
-                                borderColor: '#ffffff'
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '50%',
-                            plugins: {
-                                legend: { display: false }, 
-                                tooltip: { callbacks: { label: function(context) { return context.label + ': ' + context.parsed.toLocaleString('es-MX') + ' km'; } } }
-                            }
-                        }
+                        type: 'bar',
+                        data: { labels: finalUnitData.map(d => d.unit), datasets: [{ label: 'KM Recorridos', data: finalUnitData.map(d => d.km), backgroundColor: 'rgba(249, 115, 22, 0.8)', borderColor: '#ea580c', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'budgetUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
                     });
                 }
             } catch (e) { console.error("Error en gráfica de presupuesto", e); }
         }
 
         // ==========================================
-        // OTRAS GRÁFICAS Y FUNCIONES DE EVENTOS
+        // 5. GRÁFICA: RENDIMIENTO TABLETA (CYAN)
+        // ==========================================
+        async function updateRendimientoFilters() {
+            const elM = document.getElementById('filter-month-rendimiento');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('rendimiento-fleet-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                rendimientoFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-cyan-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="rendimiento-fleet-cb rounded text-cyan-600 focus:ring-cyan-500 h-4 w-4" checked onchange="renderRendimientoUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-rendimiento-fleets').checked = true;
+                renderRendimientoUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderRendimientoUnits(autoLoad = false) {
+            const unitList = document.getElementById('rendimiento-unit-list');
+            const activeFleets = Array.from(document.querySelectorAll('.rendimiento-fleet-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = rendimientoFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-cyan-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="rendimiento-unit-cb rounded text-cyan-600 focus:ring-cyan-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-rendimiento-units').checked = true;
+            if(autoLoad) resetRendimientoView();
+        }
+
+        function resetRendimientoView() {
+            rendimientoViewMode = 'fleet';
+            rendimientoSelectedFleet = null;
+            document.getElementById('btn-back-rendimiento').classList.add('hidden');
+            document.getElementById('rendimiento-title-text').innerHTML = "🚀 Rendimiento Tableta por Flota";
+            loadRendimientoChart();
+        }
+
+        function backRendimiento() { resetRendimientoView(); }
+
+        async function loadRendimientoChart() {
+            const elM = document.getElementById('filter-month-rendimiento');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetCbs = document.querySelectorAll('.rendimiento-fleet-cb:checked');
+            const unitCbs = document.querySelectorAll('.rendimiento-unit-cb:checked');
+            const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+            const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+
+            if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                if(rendimientoChartInstance) rendimientoChartInstance.destroy();
+                document.getElementById('rendimiento-promedio-text').textContent = "0.00";
+                return; 
+            }
+            try {
+                let queryUnits = selectedUnits;
+                let groupBy = 'fleet';
+                if (rendimientoViewMode === 'unit') {
+                    groupBy = 'unit';
+                    const unitsInSelectedFleet = rendimientoFilterData.filter(u => u.fleet === rendimientoSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
+                    queryUnits = unitsInSelectedFleet;
+                }
+                const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                const unitsParam = encodeURIComponent(queryUnits.join(','));
+                const res = await fetch(`reportes.php?action=getTabletRendimientoStats&month=${m}&fleets=${fleetsParam}&units=${unitsParam}&groupBy=${groupBy}`);
+                const response = await res.json();
+                const rawData = response.data || [];
+                const promedio = parseFloat(response.promedio || 0);
+                document.getElementById('rendimiento-promedio-text').textContent = promedio.toFixed(2);
+
+                if (rendimientoChartInstance) rendimientoChartInstance.destroy();
+                const ctx = document.getElementById('rendimientoChart').getContext('2d');
+                rendimientoChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: rawData.map(d => d.label), datasets: [{ label: 'Rendimiento (km/l)', data: rawData.map(d => d.rendimiento), backgroundColor: 'rgba(6, 182, 212, 0.8)', borderColor: '#0891b2', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: '#0891b2' }] },
+                    options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { if(rendimientoViewMode === 'fleet') { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; } else { event.native.target.style.cursor = 'default'; } }, onClick: (e, activeElements) => { if (rendimientoViewMode === 'fleet' && activeElements.length > 0) { const clickedIndex = activeElements[0].index; rendimientoSelectedFleet = rendimientoChartInstance.data.labels[clickedIndex]; rendimientoViewMode = 'unit'; document.getElementById('btn-back-rendimiento').classList.remove('hidden'); document.getElementById('rendimiento-title-text').innerHTML = `🚀 Rendimiento - Unidades de: <span class="bg-cyan-100 text-cyan-800 px-2 py-1 rounded text-sm">${rendimientoSelectedFleet}</span>`; loadRendimientoChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { let txt = context.parsed.y.toFixed(2) + ' km/l'; if (rendimientoViewMode === 'fleet') txt += ' (Clic para unidades)'; return txt; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Rendimiento (km/l)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                    plugins: [{ id: 'rendimientoLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toFixed(2); ctx.fillStyle = '#164e63'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch (e) { console.error("Error en gráfica de rendimiento", e); }
+        }
+
+        // ==========================================
+        // OTRAS GRÁFICAS (MANTENIDAS)
         // ==========================================
         async function updateKmFilters() {
-            const m = document.getElementById('filter-month-km-chart').value;
+            const elM = document.getElementById('filter-month-km-chart');
+            if(!elM) return;
+            const m = elM.value;
             const listContainer = document.getElementById('unit-checkbox-list');
             listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
             try {
@@ -2473,7 +2310,9 @@
         }
 
         async function loadKmChart() {
-            const m = document.getElementById('filter-month-km-chart').value;
+            const elM = document.getElementById('filter-month-km-chart');
+            if(!elM) return;
+            const m = elM.value;
             const checkboxes = document.querySelectorAll('.unit-checkbox:checked');
             const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
             if(selectedUnits.length === 0 && document.querySelectorAll('.unit-checkbox').length > 0) { alert("Selecciona al menos una unidad"); return; }
@@ -2495,8 +2334,10 @@
         }
 
         async function loadTabletChart() {
+            const elM = document.getElementById('filter-month-tablet-chart');
+            if(!elM) return;
             try {
-                const m = document.getElementById('filter-month-tablet-chart').value;
+                const m = elM.value;
                 const res = await fetch(`reportes.php?action=getTabletStats&month=${m}`);
                 if(!res.ok) throw new Error('Error Server');
                 const response = await res.json();
@@ -2522,10 +2363,12 @@
             } catch(e) { console.error("Error cargando gráfica tableta:", e); }
         }
 
-        // --- Gráficas Ocultas (Mantenidas para reactivación futura) ---
+        // --- Gráficas Ocultas ---
         async function loadTankBalanceChart() {
+            const elM = document.getElementById('filter-month-tank-balance');
+            if(!elM) return;
             try {
-                const m = document.getElementById('filter-month-tank-balance').value;
+                const m = elM.value;
                 const res = await fetch(`fetch_tank_balance.php?month=${m}`);
                 const response = await res.json();
                 if (response.status !== 'success') throw new Error(response.message);
@@ -2562,8 +2405,10 @@
         }
 
         async function loadManzanilloChart() {
+            const elM = document.getElementById('filter-month-manzanillo-chart');
+            if(!elM) return;
             try {
-                const m = document.getElementById('filter-month-manzanillo-chart').value;
+                const m = elM.value;
                 const res = await fetch(`reportes.php?action=getManzanilloDailyStats&month=${m}`);
                 if(!res.ok) throw new Error('Error Server');
                 const response = await res.json();
@@ -2580,7 +2425,9 @@
         }
 
         async function updateDieselUnitFilters() {
-            const m = document.getElementById('filter-month-diesel-unit').value;
+            const elM = document.getElementById('filter-month-diesel-unit');
+            if(!elM) return;
+            const m = elM.value;
             const listContainer = document.getElementById('diesel-unit-checkbox-list');
             listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
             try {
@@ -2603,7 +2450,9 @@
         function toggleAllDieselUnits(source) { document.querySelectorAll('.diesel-unit-checkbox').forEach(cb => cb.checked = source.checked); }
 
         async function loadDieselUnitChart() {
-            const m = document.getElementById('filter-month-diesel-unit').value;
+            const elM = document.getElementById('filter-month-diesel-unit');
+            if(!elM) return;
+            const m = elM.value;
             const checkboxes = document.querySelectorAll('.diesel-unit-checkbox:checked');
             const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
             if(selectedUnits.length === 0 && document.querySelectorAll('.diesel-unit-checkbox').length > 0) { alert("Selecciona unidad"); return; }
@@ -2626,72 +2475,15 @@
         function toggleUnitDropdown() { document.getElementById('unit-dropdown').classList.toggle('hidden'); }
         function toggleAllUnits(source) { document.querySelectorAll('.unit-checkbox').forEach(cb => cb.checked = source.checked); }
 
-        // --- FUNCIONES DE STARTUP Y DASHBOARD ---
-        document.addEventListener('DOMContentLoaded', () => {
-            if (sessionStorage.getItem('auth_fulltrack') === 'true') {
-                unlockSystem(false); 
-            } else {
-                document.getElementById('login-form').addEventListener('submit', async (e) => {
-                    e.preventDefault();
-                    const pin = document.getElementById('access-pin').value;
-                    const msg = document.getElementById('login-msg');
-                    const btn = e.target.querySelector('button');
-                    
-                    msg.textContent = "Verificando...";
-                    btn.disabled = true;
-                    btn.classList.add('opacity-75');
-
-                    try {
-                        const res = await fetch('verify_pin.php', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ pin })
-                        });
-                        const data = await res.json();
-                        
-                        if (data.status === 'success') {
-                            sessionStorage.setItem('auth_fulltrack', 'true'); 
-                            unlockSystem(true); 
-                        } else {
-                            msg.textContent = "⛔ " + (data.message || "NIP Incorrecto");
-                            vibrateError();
-                            document.getElementById('access-pin').value = '';
-                            document.getElementById('access-pin').focus();
-                        }
-                    } catch (err) {
-                        msg.textContent = "⚠️ Error de conexión";
-                    } finally {
-                        btn.disabled = false;
-                        btn.classList.remove('opacity-75');
-                    }
-                });
-            }
-        });
-
-        function unlockSystem(animate) {
-            const overlay = document.getElementById('login-overlay');
-            if (animate) {
-                overlay.classList.add('opacity-0', 'pointer-events-none');
-                setTimeout(() => { overlay.style.display = 'none'; }, 500);
-            } else {
-                overlay.style.display = 'none';
-            }
-            initDashboard(); 
-        }
-
-        function vibrateError() {
-            const modal = document.getElementById('login-modal');
-            modal.classList.add('animate-[shake_0.3s_ease-in-out]');
-            setTimeout(() => modal.classList.remove('animate-[shake_0.3s_ease-in-out]'), 300);
-        }
-
+        // --- FUNCIONES VARIAS (ALMACÉN, TOMAS, ETC) ---
         function initDashboard() {
             const today = new Date();
             const m = today.toISOString().slice(0, 7);
             
-            document.getElementById('current-date').textContent = today.toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+            const elDate = document.getElementById('current-date');
+            if(elDate) elDate.textContent = today.toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
             
-            ['consolidated','report','tablet', 'diesel-full', 'diesel', 'manzanillo'].forEach(id => {
+            ['consolidated','report','tablet', 'diesel-full', 'diesel', 'manzanillo', 'rendimiento-detalle'].forEach(id => {
                 const el = document.getElementById(`filter-month-${id}`);
                 if(el) el.value = m;
             });
@@ -2704,62 +2496,151 @@
             fetchReports(m); 
             fetchTabletReports(m);
             fetchManzanillo();
+            fetchRendimientoDetalle(); 
 
-            // INICIALIZACIÓN DE FILTROS PARA TODAS LAS GRÁFICAS
+            // Filtros de Gráficas
             const tabletChartFilter = document.getElementById('filter-month-tablet-chart');
             if(tabletChartFilter) { tabletChartFilter.value = m; loadTabletChart(); }
-            
             const kmFilter = document.getElementById('filter-month-km-chart');
             if(kmFilter) { kmFilter.value = m; updateKmFilters(); }
-
             const fleetMonthFilter = document.getElementById('filter-month-fleet');
             if(fleetMonthFilter) { fleetMonthFilter.value = m; updateFleetFilters(); }
-
             const kmFleetMonthFilter = document.getElementById('filter-month-km-fleet');
             if(kmFleetMonthFilter) { kmFleetMonthFilter.value = m; updateKmFleetFilters(); }
-
             const kmForecastMonthFilter = document.getElementById('filter-month-km-forecast');
             if(kmForecastMonthFilter) { kmForecastMonthFilter.value = m; updateKmForecastFilters(); }
-
             const kmBudgetMonthFilter = document.getElementById('filter-month-km-budget');
             if(kmBudgetMonthFilter) { kmBudgetMonthFilter.value = m; updateKmBudgetFilters(); }
-
-            // Filtros de gráficas ocultas (por si las activas)
-            const tankBalanceFilter = document.getElementById('filter-month-tank-balance');
-            if(tankBalanceFilter) { tankBalanceFilter.value = m; } 
-
-            const manzanilloChartFilter = document.getElementById('filter-month-manzanillo-chart');
-            if(manzanilloChartFilter) { manzanilloChartFilter.value = m; }
-
-            const dieselUnitFilter = document.getElementById('filter-month-diesel-unit');
-            if(dieselUnitFilter) { dieselUnitFilter.value = m; }
+            const rendimientoMonthFilter = document.getElementById('filter-month-rendimiento');
+            if(rendimientoMonthFilter) { rendimientoMonthFilter.value = m; updateRendimientoFilters(); }
             
-            document.getElementById('xmlInput').onchange = function() { document.getElementById('xml-name').textContent = this.files[0] ? this.files[0].name : ''; };
+            const xmlInp = document.getElementById('xmlInput');
+            if(xmlInp) {
+                xmlInp.onchange = function() { 
+                    const nameEl = document.getElementById('xml-name');
+                    if(nameEl) nameEl.textContent = this.files[0] ? this.files[0].name : ''; 
+                };
+            }
             
-            document.getElementById('uploadForm').onsubmit = async function(e) {
-                e.preventDefault();
-                const s = document.getElementById('upload-status'); s.textContent = "Procesando..."; s.className = "mt-8 text-sm font-bold text-blue-600 animate-pulse";
-                try {
-                    const res = await fetch('upload.php', { method: 'POST', body: new FormData(this) });
-                    const r = await res.json();
-                    s.textContent = r.message; s.className = `mt-8 text-sm font-bold ${r.status==='success'?'text-emerald-600':'text-rose-600'}`;
-                    if(r.status === 'success') { 
-                        fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
-                        fetchReports(document.getElementById('filter-month-report').value); 
-                        fetchNewDieselReport(); 
+            const uploadF = document.getElementById('uploadForm');
+            if(uploadF) {
+                uploadF.onsubmit = async function(e) {
+                    e.preventDefault();
+                    const s = document.getElementById('upload-status'); 
+                    if(s) { s.textContent = "Procesando..."; s.className = "mt-8 text-sm font-bold text-blue-600 animate-pulse"; }
+                    try {
+                        const res = await fetch('upload.php', { method: 'POST', body: new FormData(this) });
+                        const r = await res.json();
+                        if(s) { s.textContent = r.message; s.className = `mt-8 text-sm font-bold ${r.status==='success'?'text-emerald-600':'text-rose-600'}`; }
+                        if(r.status === 'success') { 
+                            fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                            fetchReports(document.getElementById('filter-month-report').value); 
+                            fetchNewDieselReport(); 
+                        }
+                    } catch(e) { 
+                        if(s) { s.textContent = "Error de conexión"; s.className = "mt-8 text-sm font-bold text-rose-600"; }
                     }
-                } catch(e) { s.textContent = "Error de conexión"; s.className = "mt-8 text-sm font-bold text-rose-600"; }
-            };
+                };
+            }
 
-            document.getElementById('btn-filter-consolidated').onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, document.getElementById('filter-unit-consolidated').value);
-            document.getElementById('btn-clear-consolidated').onclick = () => { document.getElementById('filter-unit-consolidated').value = ''; fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, ''); };
-            document.getElementById('btn-filter-report').onclick = () => fetchReports(document.getElementById('filter-month-report').value);
-            document.getElementById('btn-filter-tablet').onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value);
+            const btnFC = document.getElementById('btn-filter-consolidated');
+            if(btnFC) btnFC.onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, document.getElementById('filter-unit-consolidated').value);
+            
+            const btnCC = document.getElementById('btn-clear-consolidated');
+            if(btnCC) btnCC.onclick = () => { document.getElementById('filter-unit-consolidated').value = ''; fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, ''); };
+            
+            const btnFR = document.getElementById('btn-filter-report');
+            if(btnFR) btnFR.onclick = () => fetchReports(document.getElementById('filter-month-report').value);
+            
+            const btnFT = document.getElementById('btn-filter-tablet');
+            if(btnFT) btnFT.onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value);
         }
 
-        // --- LÓGICA DE EDICIÓN Y MANZANILLO ---
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        // INIT LOGIN / APP
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('auth_fulltrack') === 'true') {
+                unlockSystem(false); 
+            } else {
+                const loginForm = document.getElementById('login-form');
+                if(loginForm) {
+                    loginForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const pin = document.getElementById('access-pin').value;
+                        const msg = document.getElementById('login-msg');
+                        const btn = e.target.querySelector('button');
+                        msg.textContent = "Verificando...";
+                        btn.disabled = true; btn.classList.add('opacity-75');
+                        try {
+                            const res = await fetch('verify_pin.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ pin }) });
+                            const data = await res.json();
+                            if (data.status === 'success') { sessionStorage.setItem('auth_fulltrack', 'true'); unlockSystem(true); } 
+                            else { msg.textContent = "⛔ " + (data.message || "NIP Incorrecto"); vibrateError(); document.getElementById('access-pin').value = ''; document.getElementById('access-pin').focus(); }
+                        } catch (err) { msg.textContent = "⚠️ Error de conexión"; } finally { btn.disabled = false; btn.classList.remove('opacity-75'); }
+                    });
+                }
+            }
 
+            // Bind upload form for Diesel Entry
+            const formUploadDiesel = document.getElementById('form-upload-diesel');
+            if (formUploadDiesel) {
+                formUploadDiesel.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const base = document.getElementById('upload-diesel-base').value;
+                    const fileInput = document.getElementById('upload-diesel-file');
+                    if(!base) { alert("Selecciona una base"); return; }
+                    if(fileInput.files.length === 0) { alert("Selecciona un archivo XML"); return; }
+
+                    const formData = new FormData();
+                    formData.append('entryFile', fileInput.files[0]);
+                    formData.append('base', base); 
+
+                    const btn = this.querySelector('button[type="submit"]');
+                    const originalText = btn.textContent; btn.textContent = "Procesando..."; btn.disabled = true;
+
+                    try {
+                        const res = await fetch('upload_diesel_entry.php', { method: 'POST', body: formData });
+                        const resp = await res.json();
+                        if (resp.status === 'success') { 
+                            alert("✅ " + resp.message); 
+                            document.getElementById('modal-upload-diesel').classList.add('hidden'); 
+                            fetchDieselEntries(); 
+                        } else { 
+                            alert("❌ Error: " + resp.message); 
+                        }
+                    } catch (e) { 
+                        alert("❌ Error de conexión."); 
+                    } finally { 
+                        btn.textContent = originalText; btn.disabled = false; 
+                    }
+                });
+            }
+        });
+
+        function unlockSystem(animate) {
+            const overlay = document.getElementById('login-overlay');
+            if(overlay) {
+                if (animate) { overlay.classList.add('opacity-0', 'pointer-events-none'); setTimeout(() => { overlay.style.display = 'none'; }, 500); } 
+                else { overlay.style.display = 'none'; }
+            }
+            initDashboard(); 
+        }
+
+        function vibrateError() {
+            const modal = document.getElementById('login-modal');
+            if(modal) {
+                modal.classList.add('animate-[shake_0.3s_ease-in-out]');
+                setTimeout(() => modal.classList.remove('animate-[shake_0.3s_ease-in-out]'), 300);
+            }
+        }
+
+        function closeModal(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden'); 
+        }
+
+        // ==========================================
+        // EDICIÓN Y EXPORTACIÓN
+        // ==========================================
         function openEditDiesel(data) {
             document.getElementById('edit-diesel-id').value = data.id;
             document.getElementById('edit-diesel-unit').value = data.unit_number || '';
@@ -2777,20 +2658,17 @@
             const litros = document.getElementById('edit-diesel-fuel').value;
 
             try {
-                const res = await fetch('update_data.php', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'update_diesel', id: id, unit: unit, hubo: hubo, km: km, litros: litros })
-                });
+                const res = await fetch('update_data.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_diesel', id: id, unit: unit, hubo: hubo, km: km, litros: litros }) });
                 const resp = await res.json();
-                if(resp.status === 'success') {
-                    closeModal('modal-edit-diesel');
-                    const m = document.getElementById('filter-month-report').value;
-                    fetchReports(m);
-                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
-                    alert("✅ " + resp.message);
+                if(resp.status === 'success') { 
+                    closeModal('modal-edit-diesel'); 
+                    const m = document.getElementById('filter-month-report').value; 
+                    fetchReports(m); 
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                    fetchRendimientoDetalle(); 
+                    alert("✅ " + resp.message); 
                 } else { alert("❌ Error: " + resp.message); }
-            } catch(e) { alert("Error de conexión"); console.error(e); }
+            } catch(e) { alert("Error de conexión"); }
         }
 
         function openEditTablet(data) {
@@ -2816,68 +2694,37 @@
             const totalizador = document.getElementById('edit-tablet-totalizador').value;
 
             try {
-                const res = await fetch('update_data.php', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ action: 'update_tablet', id: id, bitacora: bitacora, km_ini: km_ini, km_fin: km_fin, diesel: diesel, vales: vales, urea: urea, totalizador: totalizador })
-                });
+                const res = await fetch('update_data.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_tablet', id: id, bitacora: bitacora, km_ini: km_ini, km_fin: km_fin, diesel: diesel, vales: vales, urea: urea, totalizador: totalizador }) });
                 const resp = await res.json();
-                if(resp.status === 'success') {
-                    closeModal('modal-edit-tablet');
-                    const m = document.getElementById('filter-month-tablet').value;
-                    fetchTabletReports(m);
-                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value);
-                    alert("✅ " + resp.message);
+                if(resp.status === 'success') { 
+                    closeModal('modal-edit-tablet'); 
+                    const m = document.getElementById('filter-month-tablet').value; 
+                    fetchTabletReports(m); 
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                    fetchRendimientoDetalle(); 
+                    alert("✅ " + resp.message); 
                 } else { alert("❌ Error: " + resp.message); }
-            } catch(e) { alert("Error de conexión"); console.error(e); }
+            } catch(e) { alert("Error de conexión"); }
         }
 
         function openUploadDieselModal() {
-            document.getElementById('form-upload-diesel').reset();
-            document.getElementById('file-name-display').textContent = '';
-            document.getElementById('modal-upload-diesel').classList.remove('hidden');
+            const form = document.getElementById('form-upload-diesel');
+            if(form) form.reset();
+            const fn = document.getElementById('file-name-display');
+            if(fn) fn.textContent = '';
+            const modal = document.getElementById('modal-upload-diesel');
+            if(modal) modal.classList.remove('hidden');
         }
-
-        document.getElementById('form-upload-diesel').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const base = document.getElementById('upload-diesel-base').value;
-            const fileInput = document.getElementById('upload-diesel-file');
-            if(!base) { alert("Selecciona una base"); return; }
-            if(fileInput.files.length === 0) { alert("Selecciona un archivo XML"); return; }
-
-            const formData = new FormData();
-            formData.append('entryFile', fileInput.files[0]);
-            formData.append('base', base); 
-
-            const btn = this.querySelector('button[type="submit"]');
-            const originalText = btn.textContent;
-            btn.textContent = "Procesando...";
-            btn.disabled = true;
-
-            try {
-                const res = await fetch('upload_diesel_entry.php', { method: 'POST', body: formData });
-                const resp = await res.json();
-                if (resp.status === 'success') {
-                    alert("✅ " + resp.message);
-                    document.getElementById('modal-upload-diesel').classList.add('hidden');
-                    fetchDieselEntries(); 
-                } else { alert("❌ Error: " + resp.message); }
-            } catch (e) {
-                alert("❌ Error de conexión.");
-            } finally {
-                btn.textContent = originalText;
-                btn.disabled = false;
-            }
-        });
 
         async function fetchDieselEntries() {
             const tbody = document.getElementById('dieselEntryTableBody');
-            const month = document.getElementById('filter-diesel-month').value;
-            const folio = document.getElementById('filter-diesel-folio').value.trim();
-            const provider = document.getElementById('filter-diesel-provider').value.trim();
-            const base = document.getElementById('filter-diesel-base').value;
+            const month = document.getElementById('filter-diesel-month') ? document.getElementById('filter-diesel-month').value : '';
+            const folio = document.getElementById('filter-diesel-folio') ? document.getElementById('filter-diesel-folio').value.trim() : '';
+            const provider = document.getElementById('filter-diesel-provider') ? document.getElementById('filter-diesel-provider').value.trim() : '';
+            const base = document.getElementById('filter-diesel-base') ? document.getElementById('filter-diesel-base').value : '';
             const params = new URLSearchParams({ month: month, folio: folio, proveedor: provider, base: base });
 
+            if(!tbody) return;
             tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-slate-400 font-bold animate-pulse">Filtrando facturas...</td></tr>';
             try {
                 const res = await fetch(`fetch_diesel_entries.php?${params.toString()}`);
@@ -2913,10 +2760,14 @@
 
         function clearDieselFilters() {
             const today = new Date();
-            document.getElementById('filter-diesel-month').value = today.toISOString().slice(0, 7); 
-            document.getElementById('filter-diesel-base').value = "";
-            document.getElementById('filter-diesel-folio').value = "";
-            document.getElementById('filter-diesel-provider').value = "";
+            const elM = document.getElementById('filter-diesel-month');
+            const elB = document.getElementById('filter-diesel-base');
+            const elF = document.getElementById('filter-diesel-folio');
+            const elP = document.getElementById('filter-diesel-provider');
+            if(elM) elM.value = today.toISOString().slice(0, 7); 
+            if(elB) elB.value = "";
+            if(elF) elF.value = "";
+            if(elP) elP.value = "";
             fetchDieselEntries(); 
         }
 
@@ -2943,6 +2794,7 @@
         // --- MANZANILLO, TOMAS Y ALMACÉN ---
         async function fetchManzanillo() {
             const tbody = document.getElementById('manzanilloTableBody');
+            if(!tbody) return;
             if (window.cachedManzanillo.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-slate-400 animate-pulse">Cargando...</td></tr>';
                 try {
@@ -2950,8 +2802,10 @@
                     window.cachedManzanillo = await res.json();
                 } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-rose-500">Error al cargar</td></tr>'; return; }
             }
-            const filterMonth = document.getElementById('filter-month-manzanillo').value; 
-            const filterUnit = document.getElementById('filter-unit-manzanillo').value.toUpperCase();
+            const elM = document.getElementById('filter-month-manzanillo');
+            const elU = document.getElementById('filter-unit-manzanillo');
+            const filterMonth = elM ? elM.value : ''; 
+            const filterUnit = elU ? elU.value.toUpperCase() : '';
             let filteredData = window.cachedManzanillo;
             if (filterMonth) {
                 filteredData = filteredData.filter(r => {
@@ -2964,62 +2818,119 @@
             if (filterUnit) filteredData = filteredData.filter(r => (r.unidad || '').toUpperCase().includes(filterUnit));
             tbody.innerHTML = filteredData.length ? '' : '<tr><td colspan="6" class="text-center p-10 text-slate-400">Sin coincidencias</td></tr>';
             filteredData.forEach(r => {
-                const row = tbody.insertRow(); row.className = 'hover:bg-indigo-50/30';
-                row.innerHTML = `<td class="px-4 py-3 border-r border-indigo-50 text-slate-500 text-xs">${r.id}</td><td class="px-4 py-3 border-r border-indigo-50 font-bold text-slate-700">${r.unidad}</td><td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.fecha_carga}</td><td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.hora_carga}</td><td class="px-4 py-3 border-r border-indigo-50 text-right font-bold text-indigo-700">${parseFloat(r.litros_diesel || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td><td class="px-4 py-3 text-xs text-slate-400 italic hidden">${r.nombre_archivo_origen}</td>`;
+                const row = tbody.insertRow(); 
+                row.className = 'hover:bg-indigo-50/30';
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-500 text-xs">${r.id}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 font-bold text-slate-700">${r.unidad}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.fecha_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.hora_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-right font-bold text-indigo-700">${parseFloat(r.litros_diesel || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 italic hidden">${r.nombre_archivo_origen}</td>
+                `;
             });
-            document.getElementById('manzanillo-status').textContent = `${filteredData.length} registros mostrados`;
+            const statusEl = document.getElementById('manzanillo-status');
+            if(statusEl) statusEl.textContent = `${filteredData.length} registros mostrados`;
         }
 
         async function uploadManzanillo(input) {
             if (!input.files.length) return;
-            const s = document.getElementById('manzanillo-status'); s.textContent = "Leyendo Excel..."; s.className = "text-xs font-bold text-blue-600 animate-pulse";
-            const file = input.files[0]; const reader = new FileReader();
+            const s = document.getElementById('manzanillo-status'); 
+            if(s) { s.textContent = "Leyendo Excel..."; s.className = "text-xs font-bold text-blue-600 animate-pulse"; }
+            const file = input.files[0]; 
+            const reader = new FileReader();
+            
             reader.onload = async function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
                     const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
-                    s.textContent = "Enviando al servidor...";
+                    if(s) s.textContent = "Enviando al servidor...";
                     const res = await fetch('upload_manzanillo.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ data: jsonData, fileName: file.name }) });
                     const d = await res.json();
-                    if (d.status === 'success') { s.textContent = `✓ ${d.inserted} nuevos, ${d.skipped} duplicados.`; s.className = "text-xs font-bold text-emerald-600"; window.cachedManzanillo = []; fetchManzanillo(); } 
-                    else { s.textContent = "Error: " + d.message; s.className = "text-xs font-bold text-rose-600"; }
-                } catch (err) { s.textContent = "Error lectura Excel"; s.className = "text-xs font-bold text-rose-600"; }
+                    if (d.status === 'success') { 
+                        if(s) { s.textContent = `✓ ${d.inserted} nuevos, ${d.skipped} duplicados.`; s.className = "text-xs font-bold text-emerald-600"; }
+                        window.cachedManzanillo = []; 
+                        fetchManzanillo(); 
+                    } else { 
+                        if(s) { s.textContent = "Error: " + d.message; s.className = "text-xs font-bold text-rose-600"; }
+                    }
+                } catch (err) { 
+                    if(s) { s.textContent = "Error lectura Excel"; s.className = "text-xs font-bold text-rose-600"; }
+                }
             };
-            reader.readAsArrayBuffer(file); input.value = ''; 
+            reader.readAsArrayBuffer(file); 
+            input.value = ''; 
         }
 
         async function saveToma(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button[type="submit"]');
-            const originalText = btn.textContent; btn.textContent = "Guardando..."; btn.disabled = true;
+            const originalText = btn.textContent; 
+            btn.textContent = "Guardando..."; 
+            btn.disabled = true;
             try {
                 const res = await fetch('save_toma.php', { method: 'POST', body: new FormData(e.target) });
                 const data = await res.json();
-                if (data.status === 'success') { alert("✅ Registro guardado"); e.target.reset(); const now = new Date(); e.target.fecha.value = now.toISOString().split('T')[0]; e.target.hora.value = now.toTimeString().split(' ')[0].substring(0,5); fetchTomas(); } 
-                else { alert("❌ Error: " + data.message); }
-            } catch (err) { alert("Error de conexión"); } finally { btn.textContent = originalText; btn.disabled = false; }
+                if (data.status === 'success') { 
+                    alert("✅ Registro guardado"); 
+                    e.target.reset(); 
+                    const now = new Date(); 
+                    e.target.fecha.value = now.toISOString().split('T')[0]; 
+                    e.target.hora.value = now.toTimeString().split(' ')[0].substring(0,5); 
+                    fetchTomas(); 
+                } else { 
+                    alert("❌ Error: " + data.message); 
+                }
+            } catch (err) { 
+                alert("Error de conexión"); 
+            } finally { 
+                btn.textContent = originalText; 
+                btn.disabled = false; 
+            }
         }
 
         async function fetchTomas() {
             const tbody = document.getElementById('tomasTableBody');
+            if(!tbody) return;
             try {
-                const res = await fetch('fetch_tomas.php'); const data = await res.json(); tbody.innerHTML = '';
-                if (data.length > 0) { updateTankChart(data[0].litros); } else { updateTankChart(0); tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; return; }
+                const res = await fetch('fetch_tomas.php'); 
+                const data = await res.json(); 
+                tbody.innerHTML = '';
+                if (data.length > 0) { 
+                    updateTankChart(data[0].litros); 
+                } else { 
+                    updateTankChart(0); 
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; 
+                    return; 
+                }
                 data.forEach(item => {
-                    const row = tbody.insertRow(); row.className = "hover:bg-purple-50 transition border-b border-slate-50";
-                    row.innerHTML = `<td class="px-4 py-3 font-bold text-slate-700 border-r border-slate-100">${item.no_muestra}</td><td class="px-4 py-3 text-slate-600 border-r border-slate-100">${item.fecha}</td><td class="px-4 py-3 text-slate-500 font-mono border-r border-slate-100">${item.hora}</td><td class="px-4 py-3 text-right font-bold text-purple-700 bg-purple-50/30">${parseFloat(item.litros).toLocaleString('es-MX', {minimumFractionDigits:2})} L</td>`;
+                    const row = tbody.insertRow(); 
+                    row.className = "hover:bg-purple-50 transition border-b border-slate-50";
+                    row.innerHTML = `
+                        <td class="px-4 py-3 font-bold text-slate-700 border-r border-slate-100">${item.no_muestra}</td>
+                        <td class="px-4 py-3 text-slate-600 border-r border-slate-100">${item.fecha}</td>
+                        <td class="px-4 py-3 text-slate-500 font-mono border-r border-slate-100">${item.hora}</td>
+                        <td class="px-4 py-3 text-right font-bold text-purple-700 bg-purple-50/30">${parseFloat(item.litros).toLocaleString('es-MX', {minimumFractionDigits:2})} L</td>
+                    `;
                 });
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-rose-500">Error.</td></tr>'; }
+            } catch (err) { 
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-rose-500">Error.</td></tr>'; 
+            }
         }
 
         function updateTankChart(currentLitros) {
-            const maxCapacity = 30000; const current = parseFloat(currentLitros) || 0;
+            const maxCapacity = 30000; 
+            const current = parseFloat(currentLitros) || 0;
             const visualCurrent = current > maxCapacity ? maxCapacity : current; 
             const emptySpace = maxCapacity - visualCurrent;
-            document.getElementById('tankLevelText').textContent = current.toLocaleString('es-MX') + ' L';
-            document.getElementById('tankPercentText').textContent = ((current / maxCapacity) * 100).toFixed(1) + '% Lleno';
-            const ctx = document.getElementById('tankChart').getContext('2d');
+            const textEl = document.getElementById('tankLevelText');
+            if(textEl) textEl.textContent = current.toLocaleString('es-MX') + ' L';
+            const percEl = document.getElementById('tankPercentText');
+            if(percEl) percEl.textContent = ((current / maxCapacity) * 100).toFixed(1) + '% Lleno';
+            const elCtx = document.getElementById('tankChart');
+            if(!elCtx) return;
+            const ctx = elCtx.getContext('2d');
             if (window.tankChartInstance) window.tankChartInstance.destroy();
             window.tankChartInstance = new Chart(ctx, {
                 type: 'bar', data: { labels: ['Nivel'], datasets: [
@@ -3031,38 +2942,80 @@
         }
 
         function openModalAlmacen() {
-            document.getElementById('formAlmacen').reset();
+            const f = document.getElementById('formAlmacen');
+            if(f) f.reset();
             const now = new Date();
-            document.getElementById('alm-fecha').value = now.toISOString().split('T')[0];
-            document.getElementById('alm-hora').value = now.toTimeString().split(' ')[0].substring(0,5);
-            document.getElementById('modal-new-almacen').classList.remove('hidden');
+            const elD = document.getElementById('alm-fecha');
+            if(elD) elD.value = now.toISOString().split('T')[0];
+            const elH = document.getElementById('alm-hora');
+            if(elH) elH.value = now.toTimeString().split(' ')[0].substring(0,5);
+            const m = document.getElementById('modal-new-almacen');
+            if(m) m.classList.remove('hidden');
         }
 
-        function closeModalAlmacen() { document.getElementById('modal-new-almacen').classList.add('hidden'); }
+        function closeModalAlmacen() { 
+            const m = document.getElementById('modal-new-almacen');
+            if(m) m.classList.add('hidden'); 
+        }
 
         async function saveEntradaAlmacen(e) {
             e.preventDefault();
-            const btn = e.target.querySelector('button'); const orig = btn.textContent; btn.textContent = "Guardando..."; btn.disabled = true;
+            const btn = e.target.querySelector('button'); 
+            const orig = btn.textContent; 
+            btn.textContent = "Guardando..."; 
+            btn.disabled = true;
             try {
                 const res = await fetch('almacen.php', { method: 'POST', body: new FormData(e.target) });
                 const data = await res.json();
-                if (data.status === 'success') { alert("✅ " + data.message); closeModalAlmacen(); fetchEntradasAlmacen(); } else { alert("❌ " + data.message); }
-            } catch (err) { alert("Error de conexión"); } finally { btn.textContent = orig; btn.disabled = false; }
+                if (data.status === 'success') { 
+                    alert("✅ " + data.message); 
+                    closeModalAlmacen(); 
+                    fetchEntradasAlmacen(); 
+                } else { 
+                    alert("❌ " + data.message); 
+                }
+            } catch (err) { 
+                alert("Error de conexión"); 
+            } finally { 
+                btn.textContent = orig; 
+                btn.disabled = false; 
+            }
         }
 
         async function fetchEntradasAlmacen() {
             const tbody = document.getElementById('almacenTableBody');
+            if(!tbody) return;
             tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-400 italic">Cargando...</td></tr>';
             try {
-                const res = await fetch('almacen.php'); const data = await res.json(); tbody.innerHTML = '';
-                if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; return; }
+                const res = await fetch('almacen.php'); 
+                const data = await res.json(); 
+                tbody.innerHTML = '';
+                if (data.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; 
+                    return; 
+                }
                 data.forEach(item => {
-                    const row = tbody.insertRow(); row.className = "hover:bg-slate-50 transition border-b border-slate-100";
-                    const lFact = parseFloat(item.litros_factura); const lReal = parseFloat(item.litros_reales); const diff = lReal - lFact;
-                    let diffClass = "text-slate-400"; if(diff > 0) diffClass = "text-emerald-600 font-bold"; if(diff < 0) diffClass = "text-rose-600 font-bold";    
-                    row.innerHTML = `<td class="px-6 py-4 whitespace-nowrap"><div class="font-bold text-slate-700">${item.fecha}</div><div class="text-xs text-slate-500">${item.hora}</div></td><td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">${item.base}</span></td><td class="px-6 py-4"><div class="text-sm font-bold text-slate-700">${item.proveedor}</div><div class="text-xs text-indigo-500 font-mono">#${item.folio}</div></td><td class="px-6 py-4 text-right font-mono text-slate-600">${lFact.toLocaleString('es-MX', {minimumFractionDigits:2})}</td><td class="px-6 py-4 text-right font-mono font-bold text-indigo-700 bg-indigo-50/30 rounded">${lReal.toLocaleString('es-MX', {minimumFractionDigits:2})}</td><td class="px-6 py-4 text-right font-mono ${diffClass}">${diff > 0 ? '+' : ''}${diff.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>`;
+                    const row = tbody.insertRow(); 
+                    row.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                    const lFact = parseFloat(item.litros_factura); 
+                    const lReal = parseFloat(item.litros_reales); 
+                    const diff = lReal - lFact;
+                    let diffClass = "text-slate-400"; 
+                    if(diff > 0) diffClass = "text-emerald-600 font-bold"; 
+                    if(diff < 0) diffClass = "text-rose-600 font-bold";    
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap"><div class="font-bold text-slate-700">${item.fecha}</div><div class="text-xs text-slate-500">${item.hora}</div></td>
+                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">${item.base}</span></td>
+                        <td class="px-6 py-4"><div class="text-sm font-bold text-slate-700">${item.proveedor}</div><div class="text-xs text-indigo-500 font-mono">#${item.folio}</div></td>
+                        <td class="px-6 py-4 text-right font-mono text-slate-600">${lFact.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                        <td class="px-6 py-4 text-right font-mono font-bold text-indigo-700 bg-indigo-50/30 rounded">${lReal.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                        <td class="px-6 py-4 text-right font-mono ${diffClass}">${diff > 0 ? '+' : ''}${diff.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                    `;
                 });
-            } catch (err) { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-rose-500">Error.</td></tr>'; }
+            } catch (err) { 
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-rose-500">Error.</td></tr>'; 
+            }
         }
     </script>
 </body>
