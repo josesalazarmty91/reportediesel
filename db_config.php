@@ -9,7 +9,7 @@
 // con los valores reales de tu hosting y base de datos.
 
 $DB_HOST = 'localhost';      // Usualmente 'localhost'
-$DB_USER = 'grupoam6_rep2';    // Tu usuario de MySQL
+$DB_USER = 'grupoam6_repfull';    // Tu usuario de MySQL
 $DB_PASS = 'Cortometraje@3'; // Tu contraseña de MySQL
 $DB_NAME = 'grupoam6_repfull';     // El nombre de tu base de datos
 
