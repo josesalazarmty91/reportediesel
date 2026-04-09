@@ -7,7 +7,8 @@ header('Content-Type: application/json');
 $response = [];
 
 // --- FUNCIÓN DE AYUDA PARA FECHAS ---
-function parseAndFormatDateTime($dateString, $inputFormat) {
+function parseAndFormatDateTime($dateString, $inputFormat)
+{
     $date = 'N/D';
     $time = 'N/D';
     $dateString = trim($dateString);
@@ -15,23 +16,23 @@ function parseAndFormatDateTime($dateString, $inputFormat) {
     $dateStringAmPm = str_replace(['a. m.', 'p. m.'], ['AM', 'PM'], $dateString);
     $stringToParse = (strpos($inputFormat, 'A') !== false) ? $dateStringAmPm : $dateString;
     $dateTime = DateTime::createFromFormat($inputFormat, $stringToParse);
-    
+
     if ($dateTime === false) {
         $altFormat = '';
         if (strpos($inputFormat, 'h:i:s A') !== false) {
             $altFormat = str_replace('h:i:s A', 'H:i:s', $inputFormat);
-            $stringToParse = $dateString; 
+            $stringToParse = $dateString;
         } elseif (strpos($inputFormat, 'H:i:s') !== false) {
             $altFormat = str_replace('H:i:s', 'h:i:s A', $inputFormat);
-            $stringToParse = $dateStringAmPm; 
+            $stringToParse = $dateStringAmPm;
         }
         if ($altFormat) {
             $dateTime = DateTime::createFromFormat($altFormat, $stringToParse);
         }
     }
     if ($dateTime) {
-        $date = $dateTime->format('m/d/Y'); 
-        $time = $dateTime->format('H:i:s'); 
+        $date = $dateTime->format('m/d/Y');
+        $time = $dateTime->format('H:i:s');
     }
     return ['date' => $date, 'time' => $time];
 }
@@ -39,15 +40,17 @@ function parseAndFormatDateTime($dateString, $inputFormat) {
 try {
     // --- 1. CONFIGURACIÓN ---
     $configFile = __DIR__ . '/db_config.php';
-    if (!file_exists($configFile) || !is_readable($configFile)) throw new Exception("Error config BD.", 1);
+    if (!file_exists($configFile) || !is_readable($configFile))
+        throw new Exception("Error config BD.", 1);
     require $configFile;
-    
+
     if (!isset($DB_HOST) || !isset($DB_USER) || !isset($DB_PASS) || !isset($DB_NAME)) {
         throw new Exception("Variables de configuración BD no definidas.", 2);
     }
 
     $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    if ($conn->connect_error) throw new Exception("Error conexión BD: " . $conn->connect_error, 3);
+    if ($conn->connect_error)
+        throw new Exception("Error conexión BD: " . $conn->connect_error, 3);
     $conn->set_charset('utf8mb4');
 
     // --- 2. VALIDACIÓN ARCHIVO ---
@@ -57,7 +60,8 @@ try {
     $xmlFilePath = $_FILES['xmlFile']['tmp_name'];
     $fileName = basename($_FILES['xmlFile']['name']);
     $xmlContent = file_get_contents($xmlFilePath);
-    if ($xmlContent === false) throw new Exception('No se pudo leer XML.');
+    if ($xmlContent === false)
+        throw new Exception('No se pudo leer XML.');
 
     libxml_use_internal_errors(true);
     $xml = simplexml_load_string($xmlContent);
@@ -93,14 +97,16 @@ try {
         "Rendimiento manejando" => "rendimiento_manejando",
         "Factor de carga" => "factor_carga",
         "Eventos de exceso de velocidad" => "eventos_exceso_velocidad",
-        "Eventos de frenado" => "eventos_frenado",
+        "Frenos totales" => "eventos_frenado",
+        "Frenadas firmes" => "frenadas_firmes",
+        "Frenados fuertes" => "frenados_fuertes",
         "Tiempo en neutro/coasting" => "tiempo_neutro_coasting",
         "Tiempo en PTO" => "tiempo_pto",
         "Combustible PTO" => "combustible_pto",
         "KM HUBODOMETRO" => "km_hubodometro",
         "Travesia KM" => "travesia_km" // <--- NUEVA COLUMNA
     ];
-    
+
     // Mapeo XML
     $mapping = [
         "KM Recorrido" => ["Cummins" => "Trip Distance", "Detroit" => "Trip Distance"],
@@ -124,7 +130,9 @@ try {
         "Rendimiento manejando" => ["Cummins" => "Drive Average Fuel Economy", "Detroit" => "Driving Economy"],
         "Factor de carga" => ["Cummins" => "Average Engine Load", "Detroit" => "Drive Average Load Factor"],
         "Eventos de exceso de velocidad" => ["Cummins" => "Overspeed Events", "Detroit" => "Over Speed A/B Count"],
-        "Eventos de frenado" => ["Cummins" => "Sudden Deceleration Counts", "Detroit" => "Brake Count / Firm brake count"],
+        "Frenos totales" => ["Cummins" => "N/D", "Detroit" => "Brake Count"],
+        "Frenadas firmes" => ["Cummins" => "N/D", "Detroit" => "Firm brake count"],
+        "Frenados fuertes" => ["Cummins" => "Sudden Deceleration Counts", "Detroit" => "Hard Brake Count 2"],
         "Tiempo en neutro/coasting" => ["Cummins" => "Coast Time", "Detroit" => "Coast Time"],
         "Tiempo en PTO" => ["Cummins" => "Total PTO Time", "Detroit" => "VSG (PTO) Time"],
         "Combustible PTO" => ["Cummins" => "Total PTO Fuel Used", "Detroit" => "VSG (PTO) Fuel"],
@@ -144,14 +152,15 @@ try {
         foreach ($mapping as $nombreReporte => $tags) {
             $tagName = $tags["Cummins"];
             $value = 'N/D';
-            
+
             if ($tagName === "Overspeed 1/2 Time") {
                 $time1 = (float) $xml->TripInfoParameters->xpath("//TripInfo[@Name='Overspeed 1 Time']/@Value")[0];
                 $time2 = (float) $xml->TripInfoParameters->xpath("//TripInfo[@Name='Overspeed 2 Time']/@Value")[0];
                 $value = $time1 + $time2;
             } else {
                 $nodes = $xml->TripInfoParameters->xpath("//TripInfo[@Name='{$tagName}']/@Value");
-                if (!empty($nodes)) $value = (string) $nodes[0];
+                if (!empty($nodes))
+                    $value = (string) $nodes[0];
             }
             $reportData[$dbColumnMap[$nombreReporte]] = $value;
         }
@@ -176,18 +185,19 @@ try {
                 $parts = explode(" / ", $tagName);
                 $nodes1 = $xml->DataFile->TripActivity->xpath("//Parameter[@Name='{$parts[0]}']");
                 $nodes2 = $xml->DataFile->TripActivity->xpath("//Parameter[@Name='{$parts[1]}']");
-                $val1 = !empty($nodes1) ? (int)$nodes1[0] : 0;
-                $val2 = !empty($nodes2) ? (int)$nodes2[0] : 0;
+                $val1 = !empty($nodes1) ? (int) $nodes1[0] : 0;
+                $val2 = !empty($nodes2) ? (int) $nodes2[0] : 0;
                 $value = $val1 + $val2;
             } elseif ($tagName === "Trip Def H / Def Fuel") {
                 $nodes1 = $xml->DataFile->TripActivity->xpath("//Parameter[@Name='Trip Def H']");
                 $nodes2 = $xml->DataFile->TripActivity->xpath("//Parameter[@Name='Def Fuel']");
-                $val1 = !empty($nodes1) ? (float)$nodes1[0] : 0;
-                $val2 = !empty($nodes2) ? (float)$nodes2[0] : 0;
+                $val1 = !empty($nodes1) ? (float) $nodes1[0] : 0;
+                $val2 = !empty($nodes2) ? (float) $nodes2[0] : 0;
                 $value = $val1 + $val2;
             } else {
                 $nodes = $xml->DataFile->TripActivity->xpath("//Parameter[@Name='{$tagName}']");
-                if (!empty($nodes)) $value = (string) $nodes[0];
+                if (!empty($nodes))
+                    $value = (string) $nodes[0];
             }
             $reportData[$dbColumnMap[$nombreReporte]] = $value;
         }
@@ -207,7 +217,7 @@ try {
     }
     // [FIN NUEVO]
 
- 
+
 
     if (empty($cleanedUnitNumber) || $cleanedUnitNumber === 'N/D') {
         $cleanedUnitNumber = 'PENDIENTE';
@@ -239,7 +249,7 @@ try {
 
     // Candado 3: Existencia Unidad
     if ($cleanedUnitNumber !== 'PENDIENTE') {
-        $unitCheckSql = "SELECT id FROM grupoam6_diesel.units WHERE unit_number = ? LIMIT 1";
+        $unitCheckSql = "SELECT id FROM grupoam6_diesel_test.units WHERE unit_number = ? LIMIT 1";
         $unitCheckStmt = $conn->prepare($unitCheckSql);
         if ($unitCheckStmt) {
             $unitCheckStmt->bind_param("s", $cleanedUnitNumber);
@@ -263,14 +273,14 @@ try {
     $values = array_values($reportData);
 
     $sql = "INSERT INTO trip_reports ($columns) VALUES ($placeholders)";
-    
+
     $stmt = $conn->prepare($sql);
     if ($stmt === false) {
         throw new Exception("Error DB Insert (Verifica columna travesia_km): " . $conn->error);
     }
-    
+
     $stmt->bind_param($types, ...$values);
-    
+
     if (!$stmt->execute()) {
         throw new Exception("Error al ejecutar la inserción: " . $stmt->error);
     }
@@ -285,7 +295,7 @@ try {
     echo json_encode($response);
 
 } catch (Exception $e) {
-    http_response_code(500); 
+    http_response_code(500);
     $response['status'] = 'error';
     $response['message'] = $e->getMessage();
     echo json_encode($response);

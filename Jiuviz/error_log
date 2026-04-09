@@ -1,0 +1,84 @@
+[13-Nov-2025 17:55:18 America/Monterrey] PHP Warning:  Undefined variable $DB_HOST in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:18 America/Monterrey] PHP Warning:  Undefined variable $DB_USER in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:18 America/Monterrey] PHP Warning:  Undefined variable $DB_PASS in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:18 America/Monterrey] PHP Warning:  Undefined variable $DB_NAME in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:18 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user ''@'localhost' (using password: NO) in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php:8
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php(8): mysqli->__construct()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:46 America/Monterrey] PHP Warning:  Undefined variable $DB_HOST in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:46 America/Monterrey] PHP Warning:  Undefined variable $DB_USER in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:46 America/Monterrey] PHP Warning:  Undefined variable $DB_PASS in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:46 America/Monterrey] PHP Warning:  Undefined variable $DB_NAME in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:55:46 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user ''@'localhost' (using password: NO) in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php:8
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php(8): mysqli->__construct()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 8
+[13-Nov-2025 17:58:16 America/Monterrey] PHP Warning:  Undefined variable $DB_HOST in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 13
+[13-Nov-2025 17:58:16 America/Monterrey] PHP Warning:  Undefined variable $DB_USER in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 13
+[13-Nov-2025 17:58:16 America/Monterrey] PHP Warning:  Undefined variable $DB_PASS in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 13
+[13-Nov-2025 17:58:16 America/Monterrey] PHP Warning:  Undefined variable $DB_NAME in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 13
+[13-Nov-2025 17:58:16 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Access denied for user ''@'localhost' (using password: NO) in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php:13
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php(13): mysqli->__construct()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 13
+[14-Nov-2025 10:37:50 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:40:33 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:41:05 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:41:12 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:41:16 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:41:27 America/Monterrey] PHP Parse error:  syntax error, unexpected token "..." in /home/grupoam6/public_html/fulltrack/reporte/fetch_reports.php on line 113
+[14-Nov-2025 10:49:10 America/Monterrey] PHP Warning:  Undefined variable $conn in /home/grupoam6/public_html/fulltrack/reporte/upload.php on line 236
+[14-Nov-2025 10:49:10 America/Monterrey] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/grupoam6/public_html/fulltrack/reporte/upload.php:236
+Stack trace:
+#0 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/upload.php on line 236
+[14-Nov-2025 10:49:34 America/Monterrey] PHP Warning:  Undefined variable $conn in /home/grupoam6/public_html/fulltrack/reporte/upload.php on line 236
+[14-Nov-2025 10:49:34 America/Monterrey] PHP Fatal error:  Uncaught Error: Call to a member function prepare() on null in /home/grupoam6/public_html/fulltrack/reporte/upload.php:236
+Stack trace:
+#0 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/upload.php on line 236
+[14-Jan-2026 09:30:37 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:30:41 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:30:43 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:30:44 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:31:03 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:31:13 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:31:16 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 09:31:24 America/Monterrey] PHP Fatal error:  Uncaught mysqli_sql_exception: Unknown column 't2.unidad' in 'SELECT' in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php:109
+Stack trace:
+#0 /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php(109): mysqli->query()
+#1 {main}
+  thrown in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 109
+[14-Jan-2026 10:46:05 America/Monterrey] PHP Parse error:  syntax error, unexpected identifier "ORDER" in /home/grupoam6/public_html/fulltrack/reporte/fetch_consolidated_reports.php on line 117
