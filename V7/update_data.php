@@ -14,14 +14,15 @@ try {
     }
 
     $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    if ($conn->connect_error) throw new Exception("Error conexión BD");
+    if ($conn->connect_error)
+        throw new Exception("Error conexión BD");
     $conn->set_charset('utf8mb4');
 
     switch ($input['action']) {
         // --- CASO 1: ACTUALIZAR REPORTE DIESEL (ECM) ---
         case 'update_diesel':
             if (isset($input['id'], $input['unit'], $input['hubo'], $input['km'], $input['litros'])) {
-                
+
                 // 1. Limpieza de datos (NUEVO: quitamos comas para evitar errores numéricos)
                 $hubo = str_replace(',', '', $input['hubo']);
                 $km = str_replace(',', '', $input['km']);
@@ -34,19 +35,22 @@ try {
                             km_recorrido = ?, 
                             combustible_viaje = ? 
                         WHERE id = ?";
-                
+
                 $stmt = $conn->prepare($sql);
-                if (!$stmt) throw new Exception("Error en query Diesel: " . $conn->error);
-                
+                if (!$stmt)
+                    throw new Exception("Error en query Diesel: " . $conn->error);
+
                 $stmt->bind_param("ssssi", $unit, $hubo, $km, $litros, $input['id']);
-                
+
                 if ($stmt->execute()) {
                     $response = ['status' => 'success', 'message' => 'Reporte ECM actualizado'];
-                } else {
+                }
+                else {
                     throw new Exception("Error al guardar ECM: " . $stmt->error);
                 }
                 $stmt->close();
-            } else {
+            }
+            else {
                 throw new Exception("Faltan datos para ECM");
             }
             break;
@@ -54,14 +58,15 @@ try {
         // --- CASO 2: ACTUALIZAR REPORTE TABLETA ---
         case 'update_tablet':
             if (isset($input['id'], $input['bitacora'], $input['km_ini'], $input['km_fin'], $input['diesel'], $input['vales'], $input['urea'], $input['totalizador'])) {
-                
+
                 // 1. Limpieza de Kilómetros
                 $kIni = floatval(str_replace(',', '', $input['km_ini']));
                 $kFin = floatval(str_replace(',', '', $input['km_fin']));
-                
+
                 // 2. Cálculo automático
                 $kmRecorrido = $kFin - $kIni;
-                if($kmRecorrido < 0) $kmRecorrido = 0; 
+                if ($kmRecorrido < 0)
+                    $kmRecorrido = 0;
 
                 // 3. Limpieza de Litros (ESTAS SON LAS LÍNEAS QUE FALTABAN)
                 $dieselVal = str_replace(',', '', $input['diesel']);
@@ -69,7 +74,7 @@ try {
                 $ureaVal = str_replace(',', '', $input['urea']);
                 $totalizadorVal = str_replace(',', '', $input['totalizador']);
 
-                $sql = "UPDATE grupoam6_diesel.registros_entrada 
+                $sql = "UPDATE grupoam6_diesel_jiuviz.registros_entrada 
                         SET bitacora_number = ?, 
                             km_inicio = ?, 
                             km_fin = ?, 
@@ -79,29 +84,32 @@ try {
                             litros_urea = ?,
                             litros_totalizador = ?
                         WHERE id = ?";
-                
-                $stmt = $conn->prepare($sql);
-                if (!$stmt) throw new Exception("Error en query Tableta: " . $conn->error);
 
-                $stmt->bind_param("ssssssssi", 
-                    $input['bitacora'], 
-                    $input['km_ini'],     // Guardamos tal cual escribió (limpio en JS o DB lo maneja) o mejor usamos $kIni si quieres forzar numero
-                    $input['km_fin'], 
-                    $kmRecorrido,         // Calculado
-                    $dieselVal,           // Limpio
-                    $valesVal,            // Limpio
-                    $ureaVal,             // Limpio
-                    $totalizadorVal,      // Limpio
+                $stmt = $conn->prepare($sql);
+                if (!$stmt)
+                    throw new Exception("Error en query Tableta: " . $conn->error);
+
+                $stmt->bind_param("ssssssssi",
+                    $input['bitacora'],
+                    $input['km_ini'], // Guardamos tal cual escribió (limpio en JS o DB lo maneja) o mejor usamos $kIni si quieres forzar numero
+                    $input['km_fin'],
+                    $kmRecorrido, // Calculado
+                    $dieselVal, // Limpio
+                    $valesVal, // Limpio
+                    $ureaVal, // Limpio
+                    $totalizadorVal, // Limpio
                     $input['id']
                 );
 
                 if ($stmt->execute()) {
                     $response = ['status' => 'success', 'message' => 'Reporte Tableta actualizado'];
-                } else {
+                }
+                else {
                     throw new Exception("Error al guardar Tableta: " . $stmt->error);
                 }
                 $stmt->close();
-            } else {
+            }
+            else {
                 throw new Exception("Faltan datos para Tableta");
             }
             break;
@@ -112,7 +120,8 @@ try {
 
     $conn->close();
 
-} catch (Exception $e) {
+}
+catch (Exception $e) {
     http_response_code(200);
     $response['message'] = $e->getMessage();
 }

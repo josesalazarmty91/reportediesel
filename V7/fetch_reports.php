@@ -6,11 +6,13 @@ $response = [];
 
 try {
     $configFile = __DIR__ . '/db_config.php';
-    if (!file_exists($configFile)) throw new Exception("Falta db_config.php");
+    if (!file_exists($configFile))
+        throw new Exception("Falta db_config.php");
     require $configFile;
 
     $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    if ($conn->connect_error) throw new Exception("Error BD: " . $conn->connect_error);
+    if ($conn->connect_error)
+        throw new Exception("Error BD: " . $conn->connect_error);
     $conn->set_charset('utf8mb4');
 
     $month = $_GET['month'] ?? null;
@@ -60,6 +62,8 @@ try {
             factor_carga,
             eventos_exceso_velocidad,
             eventos_frenado,
+            frenadas_firmes,
+            frenados_fuertes,
             tiempo_neutro_coasting,
             tiempo_pto,
             combustible_pto,
@@ -68,14 +72,16 @@ try {
         FROM trip_reports
     ";
 
-    if (!empty($whereClauses)) $sql .= " WHERE " . implode(" AND ", $whereClauses);
+    if (!empty($whereClauses))
+        $sql .= " WHERE " . implode(" AND ", $whereClauses);
     $sql .= $orderByClause;
 
     $result = $conn->query($sql);
-    if (!$result) throw new Exception("Error SQL: " . $conn->error);
+    if (!$result)
+        throw new Exception("Error SQL: " . $conn->error);
 
     $reports = [];
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $reports[] = $row;
     }
     echo json_encode($reports);
@@ -83,6 +89,6 @@ try {
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['status'=>'error', 'message'=>$e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>

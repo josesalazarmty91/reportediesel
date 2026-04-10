@@ -4,11 +4,13 @@ header('Content-Type: application/json');
 
 try {
     $configFile = __DIR__ . '/db_config.php';
-    if (!file_exists($configFile)) throw new Exception("Falta db_config.php");
+    if (!file_exists($configFile))
+        throw new Exception("Falta db_config.php");
     require $configFile;
 
     $conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
-    if ($conn->connect_error) throw new Exception("Error BD: " . $conn->connect_error);
+    if ($conn->connect_error)
+        throw new Exception("Error BD: " . $conn->connect_error);
     $conn->set_charset('utf8mb4');
 
     $month = $_GET['month'] ?? null;
@@ -53,6 +55,8 @@ try {
             t1.factor_carga,
             t1.eventos_exceso_velocidad,
             t1.eventos_frenado,
+            t1.frenadas_firmes,
+            t1.frenados_fuertes,
             t1.tiempo_neutro_coasting,
             t1.tiempo_pto,
             t1.combustible_pto,
@@ -69,19 +73,20 @@ try {
             t2.km_fin,
             t2.km_recorridos,
             t2.litros_diesel,
-            t2.litros_auto, -- <--- NUEVO CAMPO
+            t2.litros_auto,
             t2.litros_urea,
             t2.litros_totalizador
             
         FROM trip_reports as t1
         LEFT JOIN (
             SELECT r_sub.*, u_sub.unit_number
-            FROM grupoam6_diesel.registros_entrada as r_sub
-            LEFT JOIN grupoam6_diesel.units as u_sub ON r_sub.unit_id = u_sub.id
+            FROM grupoam6_diesel_jiuviz.registros_entrada as r_sub
+            LEFT JOIN grupoam6_diesel_jiuviz.units as u_sub ON r_sub.unit_id = u_sub.id
+            WHERE r_sub.validado = 1 -- <--- REGLA DE CUARENTENA APLICADA
         ) as t2 ON t1.unit_number = t2.unit_number COLLATE utf8mb4_unicode_ci
                AND STR_TO_DATE(t1.report_date, '%m/%d/%Y') = CAST(t2.timestamp AS DATE)
-        LEFT JOIN grupoam6_diesel.companies as c ON t2.company_id = c.id
-        LEFT JOIN grupoam6_diesel.operators as o ON t2.operator_id = o.id
+        LEFT JOIN grupoam6_diesel_jiuviz.companies as c ON t2.company_id = c.id
+        LEFT JOIN grupoam6_diesel_jiuviz.operators as o ON t2.operator_id = o.id
     ";
 
     $sqlOrder = " ORDER BY t1.id DESC ";
@@ -92,10 +97,11 @@ try {
     }
 
     $result = $conn->query($sql);
-    if (!$result) throw new Exception("Error SQL: " . $conn->error);
+    if (!$result)
+        throw new Exception("Error SQL: " . $conn->error);
 
     $reports = [];
-    while($row = $result->fetch_assoc()) {
+    while ($row = $result->fetch_assoc()) {
         $reports[] = $row;
     }
     echo json_encode($reports);
@@ -103,6 +109,6 @@ try {
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(['status'=>'error', 'message'=>$e->getMessage()]);
+    echo json_encode(['status' => 'error', 'message' => $e->getMessage()]);
 }
 ?>
