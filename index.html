@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,25 +7,30 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
+    
     <style>
         /* Personalización de la barra de desplazamiento */
         ::-webkit-scrollbar { height: 12px; width: 12px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 3px solid #f1f5f9; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
+        
         /* Estilos base para tablas */
         th, td { transition: background-color 0.2s, color 0.2s; border-color: #e2e8f0; }
         tr:hover td { filter: brightness(0.98); }
-
+        
         /* Clases utilitarias personalizadas */
         .cell-num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
         .cell-center { text-align: center; white-space: nowrap; }
         .cell-text { text-align: left; white-space: nowrap; }
-
+        
         /* Encabezado fijo (Sticky Header) */
-        thead th { position: sticky; top: 0; z-index: 40; box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        thead th { 
+            position: sticky; 
+            top: 0; 
+            z-index: 40; 
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); 
+        }
 
         /* Acordeón para Gráficas */
         .chart-content {
@@ -35,25 +39,25 @@
             transition: max-height 0.5s ease-in-out, opacity 0.5s ease-in-out, padding 0.3s;
             opacity: 0;
         }
-
-        .chart-content.expanded { max-height: 800px; opacity: 1; }
+        .chart-content.expanded {
+            max-height: 800px; /* Altura suficiente */
+            opacity: 1;
+        }
         .arrow-icon { transition: transform 0.3s; }
         .arrow-icon.rotated { transform: rotate(180deg); }
-
+        
         /* Animaciones para Modals y Menús */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             25% { transform: translateX(-5px); }
             75% { transform: translateX(5px); }
         }
-
         @keyframes fade-in {
             0% { opacity: 0; transform: translateY(-10px); }
             100% { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
-
 <body class="bg-slate-100 font-sans text-slate-800 min-h-screen flex flex-col">
 
     <div id="login-overlay" class="fixed inset-0 bg-slate-900 z-[100] flex items-center justify-center transition-opacity duration-500">
@@ -63,10 +67,16 @@
             </div>
             <h2 class="text-2xl font-extrabold text-slate-800 mb-2">Acceso Restringido</h2>
             <p class="text-slate-500 mb-6 text-sm">Ingresa tu NIP de seguridad para ver los reportes.</p>
-
+            
             <form id="login-form" class="space-y-4">
-                <input type="password" id="access-pin" class="w-full text-center text-3xl font-bold tracking-[0.5em] border border-slate-300 rounded-xl py-3 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition text-slate-700 placeholder:tracking-normal" placeholder="••••" maxlength="8" required autofocus autocomplete="off">
-                <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-lg transform active:scale-95">Desbloquear Sistema</button>
+                <input type="password" id="access-pin" 
+                       class="w-full text-center text-3xl font-bold tracking-[0.5em] border border-slate-300 rounded-xl py-3 focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition text-slate-700 placeholder:tracking-normal" 
+                       placeholder="••••" maxlength="8" required autofocus autocomplete="off">
+                
+                <button type="submit" 
+                        class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition shadow-lg transform active:scale-95">
+                    Desbloquear Sistema
+                </button>
             </form>
             <p id="login-msg" class="text-rose-500 font-bold text-xs mt-4 min-h-[1.5em]"></p>
         </div>
@@ -75,7 +85,9 @@
     <header class="bg-gradient-to-r from-slate-900 to-slate-800 text-white p-5 shadow-lg sticky top-0 z-50">
         <div class="container mx-auto flex justify-between items-center">
             <div>
-                <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Fulltrack Reportes</h1>
+                <h1 class="text-3xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+                    Fulltrack Reportes
+                </h1>
                 <p class="text-slate-400 text-xs mt-1 tracking-wide uppercase font-semibold">Sistema Integral de Consolidación - Grupo Amalgama</p>
             </div>
             <div class="text-right hidden md:block">
@@ -86,6 +98,7 @@
 
     <div class="bg-slate-50 border-b border-slate-200 sticky top-[88px] z-40 shadow-sm flex-none">
         <nav class="flex container mx-auto items-center flex-wrap" aria-label="Tabs">
+            
             <button id="tab-diesel-full" onclick="switchTab('diesel-full')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100">
                 <span>⛽</span> Reporte Diesel
             </button>
@@ -132,13 +145,11 @@
             <button id="tab-tomas" onclick="switchTab('tomas')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
                 <span>🧪</span> Registro de Tomas
             </button>
-            <button id="tab-corte-diario" onclick="switchTab('corte-diario')" class="flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none">
-                <span>⏱️</span> Tanque Virtual
-            </button>
         </nav>
     </div>
 
     <main class="flex-grow container mx-auto p-4 md:p-6 space-y-6">
+        
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px]">
 
             <div id="panel-diesel-full" class="p-6 h-full flex flex-col">
@@ -166,6 +177,7 @@
                         <span id="diesel-full-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span>
                     </div>
                 </div>
+
                 <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
                     <table class="min-w-max w-full divide-y divide-slate-300 text-xs border-collapse">
                         <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold h-10">
@@ -271,12 +283,15 @@
                             <tr>
                                 <th class="px-4 py-2 border-r bg-slate-100 sticky left-0 z-20">Unidad</th>
                                 <th class="px-4 py-2 border-r bg-slate-100">Fecha</th>
+                                
                                 <th class="px-4 py-2 border-r bg-orange-50 text-orange-900 text-right">Comb. Viaje (L)</th>
                                 <th class="px-4 py-2 border-r bg-orange-50 text-orange-900 text-right">KM Recorridos</th>
                                 <th class="px-4 py-2 border-r bg-orange-100 text-orange-900 text-right font-extrabold">Rend. (km/l)</th>
+                                
                                 <th class="px-4 py-2 border-r bg-blue-50 text-blue-900 text-right">Total Diesel (L)</th>
                                 <th class="px-4 py-2 border-r bg-blue-50 text-blue-900 text-right">KM Recorridos</th>
                                 <th class="px-4 py-2 border-r bg-blue-100 text-blue-900 text-right font-extrabold">Rend. (km/l)</th>
+
                                 <th class="px-4 py-2 border-r bg-slate-100 text-slate-800 text-right">Dif. (km/l)</th>
                                 <th class="px-4 py-2 bg-slate-200 text-slate-800 text-right font-extrabold">% Diferencia</th>
                             </tr>
@@ -293,8 +308,14 @@
                         <p class="text-sm text-slate-500 mt-1">Comparativa detallada entre ECM y Cargas Manuales</p>
                     </div>
                     <div class="flex flex-wrap items-end gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label><input type="month" id="filter-month-consolidated" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"></div>
-                        <div><label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label><input type="text" id="filter-unit-consolidated" placeholder="Todas..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"></div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
+                            <input type="month" id="filter-month-consolidated" class="block w-40 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
+                            <input type="text" id="filter-unit-consolidated" placeholder="Todas..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-3 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm">
+                        </div>
                         <div class="flex gap-2">
                             <button id="btn-filter-consolidated" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 px-4 rounded-md text-sm transition shadow-sm">Filtrar</button>
                             <button id="btn-clear-consolidated" class="bg-white hover:bg-slate-100 text-slate-700 font-semibold py-1.5 px-3 rounded-md text-sm border border-slate-300 transition shadow-sm">Limpiar</button>
@@ -304,8 +325,11 @@
                             </button>
                         </div>
                     </div>
-                    <div class="ml-auto"><span id="consolidated-report-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span></div>
+                    <div class="ml-auto">
+                        <span id="consolidated-report-count" class="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full border border-slate-200">Esperando datos...</span>
+                    </div>
                 </div>
+
                 <div class="overflow-x-auto border border-slate-300 rounded-lg shadow-inner bg-slate-50 h-full max-h-[75vh]">
                     <table class="min-w-max w-full divide-y divide-slate-300 text-xs border-collapse">
                         <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-bold h-10">
@@ -488,6 +512,7 @@
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Mes</label>
                             <input type="month" id="filter-month-manzanillo" class="block w-36 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-indigo-500" onchange="fetchManzanillo()">
                         </div>
+                        
                         <div>
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Unidad</label>
                             <input type="text" id="filter-unit-manzanillo" placeholder="Buscar..." class="block w-32 rounded-md border-slate-300 text-sm py-1.5 px-2 outline-none focus:ring-2 focus:ring-indigo-500" oninput="fetchManzanillo()">
@@ -504,6 +529,7 @@
                         </form>
 
                         <button onclick="fetchManzanillo()" class="text-slate-500 hover:text-indigo-600 font-bold text-lg px-2" title="Recargar">↻</button>
+                        
                         <button onclick="downloadXLS('manzanillo')" class="text-emerald-600 hover:text-emerald-800 font-bold px-2 text-sm flex items-center gap-1"><span>📥</span> Excel</button>
                     </div>
                 </div>
@@ -1025,7 +1051,7 @@
                                 <p id="tankPercentText" class="text-sm font-bold text-slate-400">0%</p>
                             </div>
 
-                            <div class="relative w-full flex-grow" style="min-height: 200px;">
+                            <div class="relative w-full flex-grow" style="min-h: 200px;">
                                 <canvas id="tankChart"></canvas>
                             </div>
 
@@ -1058,51 +1084,6 @@
                             </table>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div id="panel-corte-diario" class="hidden p-6 h-full flex flex-col">
-                <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 flex-none">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">Transacciones de Diésel</h2>
-                        <p class="text-sm text-slate-500 mt-1">Bitácora detallada de despachos y nivel del tanque línea por línea.</p>
-                    </div>
-                    <div class="flex gap-4 items-center bg-white p-2 rounded-lg shadow-sm border border-slate-200">
-                        <label class="text-sm font-bold text-slate-500 uppercase">Fecha:</label>
-                        <input type="date" id="fechaTransacciones" class="border border-slate-300 rounded-md p-1.5 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-purple-500" onchange="fetchCorteDiario()">
-                        <button onclick="fetchCorteDiario()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-1.5 px-4 rounded-md transition flex items-center gap-2">
-                            <span>↻</span> Actualizar
-                        </button>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 flex-none">
-                    <div class="bg-white p-4 rounded-xl border-l-4 border-l-blue-500 border border-slate-200 shadow-sm flex justify-between items-center">
-                        <span class="text-sm font-bold text-slate-500 uppercase">Nivel del Tanque al Amanecer:</span>
-                        <span id="lblAmanecer" class="text-2xl font-extrabold text-blue-600">0 L</span>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl border-l-4 border-l-emerald-500 border border-slate-200 shadow-sm flex justify-between items-center">
-                        <span class="text-sm font-bold text-slate-500 uppercase">Nivel Estimado Actual (Cierre):</span>
-                        <span id="lblCierre" class="text-2xl font-extrabold text-emerald-600">0 L</span>
-                    </div>
-                </div>
-
-                <div class="flex-grow overflow-auto border border-slate-300 rounded-xl shadow-inner bg-slate-50">
-                    <table class="min-w-full divide-y divide-slate-200 text-sm">
-                        <thead class="bg-purple-50 text-purple-900 font-bold sticky top-0 z-10">
-                            <tr>
-                                <th class="px-6 py-3 text-left uppercase">ID Reg.</th>
-                                <th class="px-6 py-3 text-left uppercase">Hora</th>
-                                <th class="px-6 py-3 text-center uppercase">Unidad / Evento</th>
-                                <th class="px-6 py-3 text-right uppercase">Nivel Tanque (Antes)</th>
-                                <th class="px-6 py-3 text-right uppercase text-rose-600">MOVIMIENTO (+/-)</th>
-                                <th class="px-6 py-3 text-right uppercase text-emerald-700">Saldo Tanque (=)</th>
-                            </tr>
-                        </thead>
-                        <tbody id="corteDiarioTableBody" class="bg-white divide-y divide-slate-100 font-mono">
-                            <tr><td colspan="6" class="text-center p-10 text-slate-400 italic">Selecciona una fecha...</td></tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -1352,3 +1333,1690 @@
             </form>
         </div>
     </div>
+    <script>
+        // --- CONSTANTES DE ESTILO ---
+        const STYLE_ID = 'px-3 py-2 whitespace-nowrap text-slate-600 bg-slate-100 font-bold border-r border-slate-300 sticky left-0 z-20 w-[70px]';
+        const STYLE_CONCILIADO = 'px-3 py-2 whitespace-nowrap text-center bg-white border-r border-slate-200 sticky left-[70px] z-20 w-[90px]';
+        const STYLE_XML = 'cell-num px-3 py-2 text-slate-600 bg-orange-50/50 border-r border-orange-100';
+        const STYLE_TABLET = 'cell-num px-3 py-2 text-slate-600 bg-blue-50/50 border-r border-blue-100';
+        const STYLE_CALC = 'cell-num px-3 py-2 text-emerald-800 bg-emerald-50 font-bold border-r border-emerald-200';
+
+        // --- UTILIDAD DE FORMATO ---
+        const fmt = (v) => {
+            if (v === null || v === undefined || v === 'N/D' || v === '') return 'N/D';
+            const strVal = String(v).trim();
+            const clean = strVal.replace(/,/g, '');
+            const num = parseFloat(clean);
+            if (isNaN(num) || strVal.includes('/') || /[a-zA-Z]/.test(clean)) return v; 
+            return num.toLocaleString('es-MX', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        };
+        
+        let currentConsolidatedSort = 'default'; 
+
+        function toggleConsolidatedSort() {
+            const icon = document.getElementById('sort-icon-date');
+            if (currentConsolidatedSort === 'default' || currentConsolidatedSort === 'date_asc') {
+                currentConsolidatedSort = 'date_desc';
+                icon.textContent = '▼'; 
+                icon.classList.add('text-blue-600');
+            } else {
+                currentConsolidatedSort = 'date_asc';
+                icon.textContent = '▲'; 
+                icon.classList.add('text-blue-600');
+            }
+            fetchConsolidatedReports(
+                document.getElementById('filter-month-consolidated').value, 
+                document.getElementById('filter-unit-consolidated').value
+            );
+        }
+
+        // --- VARIABLES GLOBALES ---
+        let tabletChartInstance = null;
+        let kmChartInstance = null;
+        let monthlyChartInstance = null;
+        let manzanilloChartInstance = null;
+        let dieselUnitChartInstance = null;
+        let tankBalanceChartInstance = null;
+        let fleetChartInstance = null;
+        let kmFleetChartInstance = null;
+        let kmForecastChartInstance = null; 
+        let kmBudgetChartInstance = null; 
+        let rendimientoChartInstance = null; 
+        
+        let fleetFilterData = []; 
+        let kmFleetFilterData = [];
+        let kmForecastFilterData = [];
+        let kmBudgetFilterData = [];
+        let rendimientoFilterData = []; 
+
+        let kmFleetViewMode = 'fleet'; 
+        let kmFleetSelectedFleet = null;
+        
+        let kmForecastViewMode = 'month'; 
+        let kmForecastSelectedDay = null;
+
+        let kmBudgetViewMode = 'total'; 
+        let kmBudgetSelectedFleet = null;
+        const BUDGET_KM = 800000;
+
+        let rendimientoViewMode = 'fleet'; 
+        let rendimientoSelectedFleet = null;
+
+        window.cachedDieselReports = [];
+        window.cachedTabletReports = [];
+        window.cachedManzanillo = [];
+
+        // --- REFERENCIAS DOM ---
+        const tabPanels = { 
+            "diesel-full": document.getElementById('panel-diesel-full'),
+            consolidated: document.getElementById('panel-consolidated'), 
+            report: document.getElementById('panel-report'), 
+            tablet: document.getElementById('panel-tablet'), 
+            manzanillo: document.getElementById('panel-manzanillo'), 
+            charts: document.getElementById('panel-charts'), 
+            "diesel-entry": document.getElementById('panel-diesel-entry'),
+            upload: document.getElementById('panel-upload'),
+            "tomas": document.getElementById('panel-tomas'),
+            "almacen": document.getElementById('panel-almacen'),
+            "rendimiento-detalle": document.getElementById('panel-rendimiento-detalle')
+        };
+
+        // --- NAVEGACIÓN ---
+        function switchTab(tabId) {
+            Object.values(tabPanels).forEach(p => {
+                if(p) p.classList.add('hidden');
+            });
+            
+            const navButtons = document.querySelectorAll('nav button:not(#btn-data-consumo)');
+            navButtons.forEach(b => {
+                b.className = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+            });
+
+            const btnData = document.getElementById('btn-data-consumo');
+            if(btnData) btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-medium text-sm text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-100 transition-all focus:outline-none";
+
+            if(tabPanels[tabId]) tabPanels[tabId].classList.remove('hidden');
+
+            const activeStyle = "flex-grow md:flex-grow-0 flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
+
+            if (['report', 'tablet', 'manzanillo', 'rendimiento-detalle'].includes(tabId)) {
+                if(btnData) btnData.className = "w-full flex items-center justify-center gap-2 whitespace-nowrap py-4 px-4 border-b-2 font-semibold text-sm transition-all focus:outline-none text-blue-600 border-blue-600 bg-blue-50/50 hover:bg-slate-100";
+            } else {
+                const btn = document.getElementById('tab-' + tabId);
+                if(btn) btn.className = activeStyle;
+            }
+
+            const dropdownData = document.getElementById('dropdown-data-consumo');
+            if(dropdownData) dropdownData.classList.add('hidden');
+
+            if(tabId === 'charts') loadCharts();
+            if(tabId === 'manzanillo') fetchManzanillo();
+            if(tabId === 'diesel-entry') fetchDieselEntries(); 
+            if(tabId === 'diesel-full') fetchNewDieselReport(); 
+            if(tabId === 'tomas') fetchTomas();
+            if(tabId === 'almacen') fetchEntradasAlmacen(); 
+            if(tabId === 'rendimiento-detalle') fetchRendimientoDetalle();
+        }
+
+        function toggleDataDropdown() {
+            const d = document.getElementById('dropdown-data-consumo');
+            if(d) d.classList.toggle('hidden');
+        }
+
+        function toggleChart(containerId, button) {
+            const container = document.getElementById(containerId);
+            const icon = button.querySelector('.arrow-icon');
+            if(container && icon) {
+                if (container.classList.contains('expanded')) {
+                    container.classList.remove('expanded');
+                    icon.classList.remove('rotated');
+                } else {
+                    container.classList.add('expanded');
+                    icon.classList.add('rotated');
+                }
+            }
+        }
+
+        function loadCharts() {
+            loadTabletChart(); 
+            loadKmChart();
+            loadFleetChart();
+            loadKmFleetChart(); 
+            loadKmForecastChart();
+            loadKmBudgetChart(); 
+            loadRendimientoChart(); 
+        }
+
+        // ==========================================
+        // RENDERIZADO DE TABLAS
+        // ==========================================
+        function addConsolidatedRow(report, tbodyId) {
+            const tbody = document.getElementById(tbodyId); 
+            if(!tbody) return;
+            const row = tbody.insertRow();
+            row.className = 'hover:bg-slate-50 group';
+
+            const c1 = row.insertCell(); c1.textContent = report.t1_id || 'N/D'; c1.className = STYLE_ID;
+            const c2 = row.insertCell(); c2.innerHTML = (report.conciliado == 1) ? '<span class="text-emerald-500 font-bold text-lg">●</span>' : '<span class="text-rose-400 font-bold text-lg">●</span>'; c2.className = STYLE_CONCILIADO;
+            
+            const c3 = row.insertCell(); 
+            let unitHtml = report.unit_number || 'N/D';
+            if (unitHtml === 'PENDIENTE' || unitHtml === 'N/D') {
+                unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${report.t1_id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`;
+                c3.innerHTML = unitHtml;
+            } else { c3.textContent = unitHtml; }
+            c3.className = "px-3 py-2 whitespace-nowrap font-bold text-slate-700 bg-orange-50 border-r border-orange-100 sticky left-[160px] z-20 w-[100px]";
+
+            const c4 = row.insertCell(); c4.textContent = report.t2_operator_name || 'N/D'; c4.className = "px-3 py-2 whitespace-nowrap text-xs text-slate-500 bg-blue-50/30 border-r border-blue-100";
+            const c5 = row.insertCell(); c5.textContent = report.t1_report_date || 'N/D'; c5.className = STYLE_XML;
+            const c6 = row.insertCell(); c6.textContent = report.t1_report_time || 'N/D'; c6.className = STYLE_XML;
+            const c7 = row.insertCell(); c7.textContent = report.bitacora_number || 'N/D'; c7.className = STYLE_TABLET;
+
+            row.insertCell().textContent = fmt(report.distancia_conducida); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_hubodometro); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_recorrido); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.km_recorridos); row.cells[row.cells.length-1].className = STYLE_TABLET;
+
+            row.insertCell().textContent = fmt(report.litros_diesel); row.cells[row.cells.length-1].className = STYLE_TABLET;
+            row.insertCell().textContent = fmt(report.litros_auto); row.cells[row.cells.length-1].className = STYLE_TABLET;
+            
+            const lDiesel = parseFloat(String(report.litros_diesel||0).replace(/,/g,'')) || 0;
+            const lAuto = parseFloat(String(report.litros_auto||0).replace(/,/g,'')) || 0;
+            const totalDieselVal = lDiesel + lAuto;
+            const cTotal = row.insertCell(); cTotal.textContent = totalDieselVal.toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1}); cTotal.className = "cell-num px-3 py-2 text-emerald-900 bg-emerald-100 font-extrabold border-r border-emerald-300 border-l-2 border-l-emerald-400";
+
+            row.insertCell().textContent = fmt(report.combustible_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+
+            const kmRec = parseFloat(String(report.km_recorrido||0).replace(/,/g,''));
+            const fuelV = parseFloat(String(report.combustible_viaje||0).replace(/,/g,''));
+            const rend = (kmRec > 0 && fuelV > 0) ? (kmRec / fuelV).toFixed(2) : '0.00';
+            const cRend = row.insertCell(); cRend.textContent = rend; cRend.className = "cell-num px-3 py-2 text-white bg-emerald-600 font-bold border-r border-emerald-700";
+
+            row.insertCell().textContent = fmt(report.rendimiento_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.distancia_conducida); row.cells[row.cells.length-1].className = STYLE_XML;
+            row.insertCell().textContent = fmt(report.litros_urea); row.cells[row.cells.length-1].className = STYLE_TABLET;
+
+            const distEcm = parseFloat(String(report.distancia_conducida||0).replace(/,/g, ''));
+            const kmT = parseFloat(String(report.km_recorridos||0).replace(/,/g, ''));
+            const cDifKm = row.insertCell(); cDifKm.textContent = (distEcm > 0) ? (((distEcm - kmT) / distEcm) * 100).toFixed(1) + '%' : '0.0%'; cDifKm.className = STYLE_CALC;
+            const cDifLtPerc = row.insertCell(); cDifLtPerc.textContent = (fuelV > 0) ? (((totalDieselVal - fuelV) / fuelV) * 100).toFixed(1) + '%' : '0.0%'; cDifLtPerc.className = STYLE_CALC;
+            const cDifLtAbs = row.insertCell(); const difAbs = (totalDieselVal - fuelV); cDifLtAbs.textContent = difAbs.toFixed(1); cDifLtAbs.className = (Math.abs(difAbs) > 20) ? "cell-num px-3 py-2 text-rose-600 bg-rose-100 font-bold border-r border-rose-200" : STYLE_CALC;
+
+            row.insertCell().textContent = fmt(report.tiempo_viaje); row.cells[row.cells.length-1].className = STYLE_XML;
+            const tMan = parseFloat(String(report.tiempo_manejando||0).replace(/,/g, ''));
+            row.insertCell().textContent = fmt(report.tiempo_manejando); row.cells[row.cells.length-1].className = STYLE_XML;
+            const tRal = parseFloat(String(report.tiempo_ralenti||0).replace(/,/g, ''));
+            row.insertCell().textContent = fmt(report.tiempo_ralenti); row.cells[row.cells.length-1].className = STYLE_XML;
+
+            const tViaje = parseFloat(String(report.tiempo_viaje||0).replace(/,/g, ''));
+            row.insertCell().textContent = (tViaje - tMan).toFixed(1); row.cells[row.cells.length-1].className = STYLE_CALC;
+            row.insertCell().textContent = (tMan > 0) ? ((tRal / tMan) * 100).toFixed(1) + '%' : '0.0%'; row.cells[row.cells.length-1].className = STYLE_CALC;
+
+            row.insertCell().textContent = fmt(report.distancia_top_gear); row.cells[row.cells.length-1].className = STYLE_XML;
+            const dTop = parseFloat(String(report.distancia_top_gear||0).replace(/,/g, ''));
+            row.insertCell().textContent = (kmRec > 0) ? ((dTop / kmRec) * 100).toFixed(1) + '%' : '0.0%'; row.cells[row.cells.length-1].className = STYLE_CALC;
+
+            const porcMotor = (tViaje > 0) ? ((tRal / tViaje) * 100).toFixed(1) + '%' : '0.0%';
+            const cMotor = row.insertCell(); cMotor.textContent = porcMotor; cMotor.className = STYLE_CALC;
+
+            const porcOperando = (tViaje > 0) ? ((tMan / tViaje) * 100).toFixed(1) + '%' : '0.0%';
+            const cOperando = row.insertCell(); cOperando.textContent = porcOperando; cOperando.className = STYLE_CALC;
+
+            [report.eventos_frenado, report.rpm_maxima, report.factor_carga, report.def_usado, report.travesia_km, report.distancia_cambio_bajo, report.combustible_manejando, report.combustible_ralenti, report.tiempo_top_gear, report.tiempo_crucero, report.tiempo_exceso_velocidad, report.velocidad_maxima, report.velocidad_promedio, report.rendimiento_manejando, report.eventos_exceso_velocidad, report.tiempo_neutro_coasting, report.tiempo_pto, report.combustible_pto].forEach(v => { const c = row.insertCell(); c.textContent = fmt(v); c.className = STYLE_XML; });
+            [report.t2_id, report.t2_company_name, report.t2_unit_number, report.t2_timestamp, report.km_inicio, report.km_fin, report.litros_totalizador].forEach(v => { const c = row.insertCell(); c.textContent = fmt(v); c.className = STYLE_TABLET; });
+        }
+
+        async function fetchConsolidatedReports(m='', u='') {
+            const tbody = document.getElementById('consolidatedTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Consultando base de datos...</td></tr>';
+            try {
+                const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&sort=${currentConsolidatedSort}&t=${Date.now()}`);
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0) tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400">No se encontraron registros.</td></tr>';
+                data.forEach(r => addConsolidatedRow(r, 'consolidatedTableBody'));
+                document.getElementById('consolidated-report-count').textContent = `${data.length} registros`;
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-rose-500 font-bold">Error de conexión con el servidor.</td></tr>'; }
+        }
+
+        async function fetchNewDieselReport() {
+            const elM = document.getElementById('filter-month-diesel-full');
+            const elU = document.getElementById('filter-unit-diesel-full');
+            const tbody = document.getElementById('dieselFullTableBody');
+            if(!elM || !elU || !tbody) return;
+
+            const m = elM.value;
+            const u = elU.value;
+            tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Generando Reporte Maestro...</td></tr>';
+            
+            try {
+                const res = await fetch(`fetch_diesel_full.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-slate-400">Sin datos para mostrar.</td></tr>';
+                } else {
+                    data.forEach(r => addConsolidatedRow(r, 'dieselFullTableBody'));
+                }
+                const cnt = document.getElementById('diesel-full-count');
+                if(cnt) cnt.textContent = `${data.length} registros`;
+            } catch(e) {
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="60" class="text-center p-20 text-rose-500 font-bold">Error de conexión con el servidor.</td></tr>';
+            }
+        }
+
+        function clearNewDieselReport() {
+            const m = new Date().toISOString().slice(0, 7);
+            const elM = document.getElementById('filter-month-diesel-full');
+            const elU = document.getElementById('filter-unit-diesel-full');
+            if(elM) elM.value = m;
+            if(elU) elU.value = '';
+            fetchNewDieselReport();
+        }
+
+        // ==========================================
+        // 1. REPORTE: RENDIMIENTO DETALLADO
+        // ==========================================
+        async function fetchRendimientoDetalle() {
+            const elM = document.getElementById('filter-month-rendimiento-detalle');
+            const elU = document.getElementById('filter-unit-rendimiento-detalle');
+            const tbody = document.getElementById('rendimientoDetalleTableBody');
+            
+            if(!elM || !elU || !tbody) return;
+
+            const m = elM.value;
+            const u = elU.value;
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-slate-400 font-bold italic animate-pulse">Analizando discrepancias de rendimiento...</td></tr>';
+            
+            try {
+                const res = await fetch(`fetch_consolidated_reports.php?month=${m}&unit=${u}&t=${Date.now()}`);
+                const data = await res.json();
+                let processedData = [];
+                
+                data.forEach(r => {
+                    const ecmKm = parseFloat(String(r.km_recorrido||0).replace(/,/g,'')) || 0;
+                    const ecmFuel = parseFloat(String(r.combustible_viaje||0).replace(/,/g,'')) || 0;
+                    const ecmRend = ecmFuel > 0 ? (ecmKm / ecmFuel) : 0;
+                    
+                    const tabKm = parseFloat(String(r.km_recorridos||0).replace(/,/g,'')) || 0;
+                    const tabFuelD = parseFloat(String(r.litros_diesel||0).replace(/,/g,'')) || 0;
+                    const tabFuelV = parseFloat(String(r.litros_auto||0).replace(/,/g,'')) || 0;
+                    const tabFuel = tabFuelD + tabFuelV;
+                    const tabRend = tabFuel > 0 ? (tabKm / tabFuel) : 0;
+                    
+                    const diffAbs = Math.abs(ecmRend - tabRend);
+                    let diffPerc = 0;
+                    if (ecmRend > 0) { diffPerc = (Math.abs(ecmRend - tabRend) / ecmRend) * 100; } 
+                    else if (tabRend > 0) { diffPerc = 100; }
+
+                    if (ecmRend > 0 || tabRend > 0) {
+                        processedData.push({
+                            unit: r.unit_number || 'N/D', date: r.t1_report_date || 'N/D',
+                            ecmKm, ecmFuel, ecmRend, tabKm, tabFuel, tabRend, diffAbs, diffPerc
+                        });
+                    }
+                });
+
+                processedData.sort((a, b) => b.diffPerc - a.diffPerc);
+                tbody.innerHTML = '';
+                if(processedData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-slate-400">No hay datos suficientes para el análisis.</td></tr>';
+                } else {
+                    processedData.forEach(item => {
+                        const row = tbody.insertRow();
+                        row.className = 'hover:bg-slate-50 transition border-b border-slate-100';
+                        let bgWarning = '', textWarning = 'text-slate-600';
+                        if (item.diffPerc > 20) { bgWarning = 'bg-rose-50'; textWarning = 'text-rose-600 font-extrabold'; } 
+                        else if (item.diffPerc > 10) { bgWarning = 'bg-amber-50'; textWarning = 'text-amber-600 font-bold'; }
+
+                        row.innerHTML = `
+                            <td class="px-4 py-2 border-r border-slate-200 font-bold text-slate-700 sticky left-0 bg-white z-10 w-[100px] shadow-sm">${item.unit}</td>
+                            <td class="px-4 py-2 border-r border-slate-200 text-slate-500 text-xs">${item.date}</td>
+                            <td class="px-4 py-2 border-r border-orange-100 text-right text-orange-800 bg-orange-50/30 font-mono">${item.ecmFuel.toLocaleString('es-MX', {minimumFractionDigits:1})}</td>
+                            <td class="px-4 py-2 border-r border-orange-100 text-right text-orange-800 bg-orange-50/30 font-mono">${item.ecmKm.toLocaleString('es-MX', {maximumFractionDigits:0})}</td>
+                            <td class="px-4 py-2 border-r border-orange-200 text-right text-orange-900 bg-orange-100/50 font-extrabold font-mono">${item.ecmRend.toFixed(2)}</td>
+                            <td class="px-4 py-2 border-r border-blue-100 text-right text-blue-800 bg-blue-50/30 font-mono">${item.tabFuel.toLocaleString('es-MX', {minimumFractionDigits:1})}</td>
+                            <td class="px-4 py-2 border-r border-blue-100 text-right text-blue-800 bg-blue-50/30 font-mono">${item.tabKm.toLocaleString('es-MX', {maximumFractionDigits:0})}</td>
+                            <td class="px-4 py-2 border-r border-blue-200 text-right text-blue-900 bg-blue-100/50 font-extrabold font-mono">${item.tabRend.toFixed(2)}</td>
+                            <td class="px-4 py-2 border-r border-slate-200 text-right text-slate-700 font-mono ${bgWarning}">${item.diffAbs.toFixed(2)}</td>
+                            <td class="px-4 py-2 text-right font-mono ${textWarning} ${bgWarning}">${item.diffPerc.toFixed(1)}%</td>
+                        `;
+                    });
+                }
+                const cnt = document.getElementById('rendimiento-detalle-count');
+                if(cnt) cnt.textContent = `${processedData.length} registros analizados`;
+            } catch(e) { console.error(e); tbody.innerHTML = '<tr><td colspan="10" class="text-center p-20 text-rose-500 font-bold">Error de conexión.</td></tr>'; }
+        }
+
+        function clearRendimientoDetalleFilters() {
+            const m = new Date().toISOString().slice(0, 7);
+            const elM = document.getElementById('filter-month-rendimiento-detalle');
+            const elU = document.getElementById('filter-unit-rendimiento-detalle');
+            if(elM) elM.value = m;
+            if(elU) elU.value = '';
+            fetchRendimientoDetalle();
+        }
+
+        // ==========================================
+        // ECM & TABLETA FUNCIONES
+        // ==========================================
+        async function fetchReports(m='') {
+            const tbody = document.getElementById('reportTableBody'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            try {
+                const res = await fetch(`fetch_reports.php?month=${m}`);
+                const data = await res.json();
+                window.cachedDieselReports = data;
+                let tKm = 0, tFl = 0;
+                
+                data.forEach(r => {
+                    tKm += parseFloat(String(r.km_recorrido||0).replace(/,/g,'')); 
+                    tFl += parseFloat(String(r.combustible_viaje||0).replace(/,/g,''));
+                    const row = tbody.insertRow(); 
+                    row.className = 'hover:bg-orange-50/50 group';
+                    const btnEdit = `<button onclick='openEditDiesel(${JSON.stringify(r)})' class="text-slate-400 hover:text-orange-600 transition transform hover:scale-110">✏️</button>`;
+                    let unitHtml = r.unit_number;
+                    if (r.unit_number === 'PENDIENTE' || r.unit_number === 'N/D') { unitHtml = `<div class="flex items-center gap-2 text-rose-600 font-bold bg-rose-50 px-2 py-1 rounded"><span>PENDIENTE</span><button onclick="editUnit(${r.id})" class="text-xs bg-white border border-rose-200 px-1 rounded hover:bg-rose-100">✏️</button></div>`; }
+
+                    row.innerHTML = `<td class="px-3 py-2 border-r text-center bg-white">${btnEdit}</td><td class="px-3 py-2 border-r font-medium text-slate-700">${r.id}</td><td class="px-3 py-2 border-r font-medium text-slate-700 sticky left-0 bg-orange-100 z-10">${unitHtml}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_date}</td><td class="px-3 py-2 border-r text-slate-600">${r.report_time}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_hubodometro)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.travesia_km)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.km_recorrido)}</td><td class="px-3 py-2 border-r text-right font-bold text-orange-700">${fmt(r.combustible_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_conducida)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.distancia_cambio_bajo)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.def_usado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_ralenti)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_top_gear)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_crucero)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rpm_maxima)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.velocidad_promedio)}</td><td class="px-3 py-2 border-r text-right bg-emerald-50 text-emerald-800 font-bold">${fmt(r.rendimiento_viaje)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.rendimiento_manejando)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.factor_carga)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_exceso_velocidad)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.eventos_frenado)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_neutro_coasting)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.tiempo_pto)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.combustible_pto)}</td><td class="px-3 py-2 text-xs text-slate-400 italic">${r.file_name}</td>`;
+                });
+                if(document.getElementById('report-count')) document.getElementById('report-count').textContent = `${data.length} registros`;
+                if(document.getElementById('kpi-total-km')) document.getElementById('kpi-total-km').textContent = tKm.toLocaleString('es-MX', {maximumFractionDigits:0});
+                if(document.getElementById('kpi-total-fuel')) document.getElementById('kpi-total-fuel').textContent = tFl.toLocaleString('es-MX', {maximumFractionDigits:1}) + ' L';
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchTabletReports(m='') {
+            const tbody = document.getElementById('tabletTableBody'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            try {
+                const res = await fetch(`fetch_tablet_reports.php?month=${m}`);
+                const data = await res.json();
+                window.cachedTabletReports = data;
+                data.forEach(r => {
+                    const row = tbody.insertRow(); 
+                    row.className = 'hover:bg-blue-50/50 group';
+                    const kmRec = parseFloat(String(r.km_recorridos || 0).replace(/,/g, '')) || 0;
+                    const ltsDiesel = parseFloat(String(r.litros_diesel || 0).replace(/,/g, '')) || 0;
+                    const ltsVales = parseFloat(String(r.litros_auto || 0).replace(/,/g, '')) || 0;
+                    const totalDiesel = ltsDiesel + ltsVales;
+                    const rendReal = (totalDiesel > 0) ? (kmRec / totalDiesel) : 0;
+                    const rString = JSON.stringify(r).replace(/'/g, "&#39;");
+                    const btnEdit = `<button onclick='openEditTablet(${rString})' class="text-slate-400 hover:text-blue-600 transition transform hover:scale-110">✏️</button>`;
+                    const styleCalculated = "px-3 py-2 border-r text-right font-bold text-emerald-800 bg-emerald-100";
+                    const styleRendimiento = "px-3 py-2 border-r text-right font-extrabold text-emerald-900 bg-emerald-200 border-l-2 border-emerald-300";
+
+                    row.innerHTML = `<td class="px-3 py-2 border-r text-center bg-white">${btnEdit}</td><td class="px-3 py-2 border-r text-xs text-slate-500">${r.id}</td><td class="px-3 py-2 border-r text-xs font-bold text-slate-600 uppercase">${r.company_name}</td><td class="px-3 py-2 border-r font-bold text-blue-800">${r.unit_number}</td><td class="px-3 py-2 border-r text-slate-600">${r.timestamp}</td><td class="px-3 py-2 border-r text-xs text-slate-600 uppercase">${r.operator_name}</td><td class="px-3 py-2 border-r text-right font-mono text-slate-600">${r.bitacora_number}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_inicio)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.km_fin)}</td><td class="${styleCalculated}">${fmt(r.km_recorridos)}</td><td class="px-3 py-2 border-r text-right font-bold text-blue-700">${fmt(r.litros_diesel)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.litros_auto)}</td><td class="${styleCalculated}">${totalDiesel.toLocaleString('es-MX', {minimumFractionDigits: 1, maximumFractionDigits: 1})}</td><td class="${styleRendimiento}">${rendReal.toFixed(2)}</td><td class="px-3 py-2 border-r text-right">${fmt(r.litros_urea)}</td><td class="px-3 py-2 text-right text-slate-500">${fmt(r.litros_totalizador)}</td>`;
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function editUnit(reportId) {
+            const newUnit = prompt("Ingrese el número de unidad correcto:");
+            if (newUnit && newUnit.trim() !== "") {
+                try {
+                    await fetch('update_unit.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({id: reportId, unit: newUnit.trim()}) });
+                    const mC = document.getElementById('filter-month-consolidated') ? document.getElementById('filter-month-consolidated').value : '';
+                    const mR = document.getElementById('filter-month-report') ? document.getElementById('filter-month-report').value : '';
+                    fetchConsolidatedReports(mC);
+                    fetchReports(mR);
+                    fetchRendimientoDetalle();
+                } catch(e) { alert("Error de conexión"); }
+            }
+        }
+
+        // ==========================================
+        // GRÁFICAS: DIESEL POR FLOTA
+        // ==========================================
+        async function updateFleetFilters() {
+            const elM = document.getElementById('filter-month-fleet');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('fleet-checkbox-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                fleetFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="fleet-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked onchange="renderFleetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-fleets').checked = true;
+                renderFleetUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderFleetUnits(autoLoad = false) {
+            const unitList = document.getElementById('fleet-unit-checkbox-list');
+            const activeFleets = Array.from(document.querySelectorAll('.fleet-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = fleetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="fleet-unit-cb rounded text-amber-600 focus:ring-amber-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-fleet-units').checked = true;
+            if(autoLoad) loadFleetChart();
+        }
+
+        async function loadFleetChart() {
+            const elM = document.getElementById('filter-month-fleet');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetCbs = document.querySelectorAll('.fleet-cb:checked');
+            const unitCbs = document.querySelectorAll('.fleet-unit-cb:checked');
+            const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+            const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+            if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                if(fleetChartInstance) fleetChartInstance.destroy();
+                document.getElementById('fleet-month-total').textContent = "0.0";
+                return; 
+            }
+            try {
+                const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getDieselStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
+                const response = await res.json();
+                document.getElementById('fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1});
+                const data = response.data || [];
+                if (fleetChartInstance) fleetChartInstance.destroy();
+                const ctx = document.getElementById('fleetChart').getContext('2d');
+                fleetChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: data.map(d => d.flota), datasets: [{ label: 'Consumo Diesel (L)', data: data.map(d => d.fuel), backgroundColor: 'rgba(245, 158, 11, 0.7)', borderColor: 'rgba(217, 119, 6, 1)', borderWidth: 1, borderRadius: 6 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Litros (L)' } } } },
+                    plugins: [{ id: 'fleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' L'; ctx.fillStyle = '#78350f'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch(e) { console.error("Error chart Flota", e); }
+        }
+
+        // ==========================================
+        // GRÁFICAS: KM RECORRIDOS POR FLOTA
+        // ==========================================
+        async function updateKmFleetFilters() {
+            const elM = document.getElementById('filter-month-km-fleet');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('km-fleet-checkbox-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                kmFleetFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-fleet-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked onchange="renderKmFleetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-km-fleets').checked = true;
+                renderKmFleetUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderKmFleetUnits(autoLoad = false) {
+            const unitList = document.getElementById('km-fleet-unit-checkbox-list');
+            const activeFleets = Array.from(document.querySelectorAll('.km-fleet-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = kmFleetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-fleet-unit-cb rounded text-teal-600 focus:ring-teal-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-km-fleet-units').checked = true;
+            if(autoLoad) resetKmFleetView(); 
+        }
+
+        function resetKmFleetView() {
+            kmFleetViewMode = 'fleet';
+            kmFleetSelectedFleet = null;
+            document.getElementById('btn-back-km-fleet').classList.add('hidden');
+            document.getElementById('km-fleet-title').innerHTML = "🚚 KM Recorridos por Flota (Tableta)";
+            loadKmFleetChart(); 
+        }
+
+        async function loadKmFleetChart() {
+            const elM = document.getElementById('filter-month-km-fleet');
+            if(!elM) return;
+            const m = elM.value;
+            if (kmFleetViewMode === 'fleet') {
+                const fleetCbs = document.querySelectorAll('.km-fleet-cb:checked');
+                const unitCbs = document.querySelectorAll('.km-fleet-unit-cb:checked');
+                const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+                const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+
+                if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                    if(kmFleetChartInstance) kmFleetChartInstance.destroy();
+                    document.getElementById('km-fleet-month-total').textContent = "0";
+                    return; 
+                }
+                try {
+                    const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                    const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                    const res = await fetch(`reportes.php?action=getKmStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
+                    const response = await res.json();
+                    document.getElementById('km-fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
+                    const data = response.data || [];
+                    if (kmFleetChartInstance) kmFleetChartInstance.destroy();
+                    const ctx = document.getElementById('kmFleetChart').getContext('2d');
+                    kmFleetChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: data.map(d => d.flota), datasets: [{ label: 'KM Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(20, 184, 166, 0.8)', borderColor: 'rgba(13, 148, 136, 1)', borderWidth: 1, borderRadius: 6, hoverBackgroundColor: 'rgba(13, 148, 136, 1)' }] },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; const clickedFleet = kmFleetChartInstance.data.labels[clickedIndex]; kmFleetViewMode = 'unit'; kmFleetSelectedFleet = clickedFleet; document.getElementById('btn-back-km-fleet').classList.remove('hidden'); document.getElementById('km-fleet-title').innerHTML = `🚚 KM Recorridos - Detalle de Flota: <span class="bg-teal-100 text-teal-800 px-2 py-1 rounded text-sm">${clickedFleet}</span>`; loadKmFleetChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } },
+                        plugins: [{ id: 'kmFleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#0f766e'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                } catch(e) { console.error("Error chart KM Flota", e); }
+            } else if (kmFleetViewMode === 'unit') {
+                const unitCbs = document.querySelectorAll('.km-fleet-unit-cb:checked');
+                const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+                const unitsInThisFleet = kmFleetFilterData.filter(u => u.fleet === kmFleetSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
+
+                if(unitsInThisFleet.length === 0) { 
+                    if(kmFleetChartInstance) kmFleetChartInstance.destroy();
+                    document.getElementById('km-fleet-month-total').textContent = "0";
+                    return; 
+                }
+                try {
+                    const unitsParam = encodeURIComponent(unitsInThisFleet.join(','));
+                    const res = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${unitsParam}`);
+                    const response = await res.json();
+                    document.getElementById('km-fleet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
+                    const data = response.data || [];
+                    if (kmFleetChartInstance) kmFleetChartInstance.destroy();
+                    const ctx = document.getElementById('kmFleetChart').getContext('2d');
+                    kmFleetChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: data.map(d => d.unit), datasets: [{ label: 'KM Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(14, 116, 144, 0.7)', borderColor: 'rgba(15, 118, 110, 1)', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'kmFleetUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#042f2e'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                } catch(e) { console.error("Error chart KM Flota Drilldown", e); }
+            }
+        }
+
+        // ==========================================
+        // GRÁFICAS: FORECAST VS KM REAL (27k)
+        // ==========================================
+        async function updateKmForecastFilters() {
+            const elM = document.getElementById('filter-month-km-forecast');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('km-forecast-checkbox-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                kmForecastFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-forecast-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked onchange="renderKmForecastUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-km-forecast-fleets').checked = true;
+                renderKmForecastUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderKmForecastUnits(autoLoad = false) {
+            const unitList = document.getElementById('km-forecast-unit-checkbox-list');
+            const activeFleets = Array.from(document.querySelectorAll('.km-forecast-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = kmForecastFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-forecast-unit-cb rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-km-forecast-units').checked = true;
+            if(autoLoad) resetKmForecastView();
+        }
+
+        function resetKmForecastView() {
+            kmForecastViewMode = 'month';
+            kmForecastSelectedDay = null;
+            document.getElementById('btn-back-km-forecast').classList.add('hidden');
+            document.getElementById('km-forecast-title').innerHTML = "📈 Forecast vs KM Recorridos Diarios (Tableta)";
+            loadKmForecastChart();
+        }
+
+        async function loadKmForecastChart() {
+            const elM = document.getElementById('filter-month-km-forecast');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetCbs = document.querySelectorAll('.km-forecast-cb:checked');
+            const unitCbs = document.querySelectorAll('.km-forecast-unit-cb:checked');
+            
+            const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+            const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+
+            if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                if(kmForecastChartInstance) kmForecastChartInstance.destroy();
+                document.getElementById('km-forecast-month-total').textContent = "0";
+                return; 
+            }
+
+            try {
+                const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                
+                if (kmForecastViewMode === 'month') {
+                    const res = await fetch(`reportes.php?action=getKmForecastStats&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
+                    const response = await res.json();
+                    document.getElementById('km-forecast-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
+                    const rawData = response.data || [];
+                    const parts = m.split('-');
+                    const daysInMonth = new Date(parts[0], parts[1], 0).getDate();
+                    const labels = [];
+                    const dataKm = [];
+                    const dataForecast = [];
+                    const fullDates = []; 
+                    
+                    const dataMap = {};
+                    rawData.forEach(d => dataMap[d.dia] = d.km);
+
+                    for(let i=1; i<=daysInMonth; i++) {
+                        const dayStr = `${m}-${String(i).padStart(2, '0')}`;
+                        labels.push(String(i).padStart(2, '0')); 
+                        fullDates.push(dayStr);
+                        dataKm.push(dataMap[dayStr] || 0);
+                        dataForecast.push(27000); 
+                    }
+                    
+                    if (kmForecastChartInstance) kmForecastChartInstance.destroy();
+                    const ctx = document.getElementById('kmForecastChart').getContext('2d');
+                    kmForecastChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { type: 'line', label: 'Forecast (27,000 km)', data: dataForecast, borderColor: '#ef4444', backgroundColor: '#ef4444', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 5, fill: false, order: 0 },
+                                { type: 'bar', label: 'KM Reales', data: dataKm, backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(37, 99, 235, 1)', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: 'rgba(37, 99, 235, 1)', order: 1 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; kmForecastSelectedDay = fullDates[clickedIndex]; kmForecastViewMode = 'day'; document.getElementById('btn-back-km-forecast').classList.remove('hidden'); document.getElementById('km-forecast-title').innerHTML = `📈 Detalle KM del Día: <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${kmForecastSelectedDay}</span>`; loadKmForecastChart(); } }, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { if (context.dataset.type === 'line') return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } } } }
+                    });
+
+                } else if (kmForecastViewMode === 'day') {
+                    const res = await fetch(`reportes.php?action=getKmStatsByUnitDay&day=${kmForecastSelectedDay}&fleets=${fleetsParam}&units=${unitsParam}`);
+                    const response = await res.json();
+                    document.getElementById('km-forecast-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits:0});
+                    const data = response.data || [];
+                    if (kmForecastChartInstance) kmForecastChartInstance.destroy();
+                    const ctx = document.getElementById('kmForecastChart').getContext('2d');
+                    kmForecastChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: data.map(d => d.unit), datasets: [{ label: `KM Recorridos el ${kmForecastSelectedDay}`, data: data.map(d => d.km), backgroundColor: 'rgba(37, 99, 235, 0.8)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'kmForecastUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#1e3a8a'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                }
+            } catch(e) { console.error("Error chart KM Forecast Drilldown", e); }
+        }
+
+        // ==========================================
+        // GRÁFICAS: PRESUPUESTO MENSUAL
+        // ==========================================
+        async function updateKmBudgetFilters() {
+            const elM = document.getElementById('filter-month-km-budget');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('km-budget-checkbox-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                kmBudgetFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="km-budget-cb rounded text-orange-600 focus:ring-orange-500 h-4 w-4" checked onchange="renderKmBudgetUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-km-budget-fleets').checked = true;
+                renderKmBudgetUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderKmBudgetUnits(autoLoad = false) {
+            const unitList = document.getElementById('km-budget-unit-checkbox-list');
+            const activeFleets = Array.from(document.querySelectorAll('.km-budget-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = kmBudgetFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="km-budget-unit-cb rounded text-orange-600 focus:ring-orange-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-km-budget-units').checked = true;
+            if(autoLoad) resetKmBudgetView();
+        }
+
+        function resetKmBudgetView() {
+            kmBudgetViewMode = 'total';
+            kmBudgetSelectedFleet = null;
+            document.getElementById('btn-back-km-budget').classList.add('hidden');
+            document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto Mensual: 800,000 km";
+            loadKmBudgetChart();
+        }
+
+        function backKmBudget() {
+            if (kmBudgetViewMode === 'unit') {
+                kmBudgetViewMode = 'fleet';
+                document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto: Desglose por Flota";
+            } else if (kmBudgetViewMode === 'fleet') {
+                kmBudgetViewMode = 'total';
+                document.getElementById('btn-back-km-budget').classList.add('hidden');
+                document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto Mensual: 800,000 km";
+            }
+            loadKmBudgetChart();
+        }
+
+        async function loadKmBudgetChart() {
+            const elM = document.getElementById('filter-month-km-budget');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetCbs = document.querySelectorAll('.km-budget-cb:checked');
+            const unitCbs = document.querySelectorAll('.km-budget-unit-cb:checked');
+            const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+            const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+
+            if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                if(kmBudgetChartInstance) kmBudgetChartInstance.destroy();
+                document.getElementById('km-budget-month-total').textContent = "0";
+                return; 
+            }
+
+            try {
+                const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getKmStatsByFleet&month=${m}&fleets=${fleetsParam}&units=${unitsParam}`);
+                const response = await res.json();
+                const fleetData = response.data || [];
+                const totalKm = parseFloat(response.total_acumulado || 0);
+
+                document.getElementById('km-budget-month-total').textContent = totalKm.toLocaleString('es-MX', {maximumFractionDigits:0});
+
+                if (kmBudgetChartInstance) kmBudgetChartInstance.destroy();
+                const ctx = document.getElementById('kmBudgetChart').getContext('2d');
+
+                if (kmBudgetViewMode === 'total') {
+                    kmBudgetChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Desempeño Mensual'],
+                            datasets: [
+                                { type: 'line', label: 'Presupuesto (Meta 800k)', data: [BUDGET_KM], borderColor: '#c2410c', backgroundColor: '#c2410c', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, pointHoverRadius: 0, order: 0 },
+                                { type: 'bar', label: 'KM Recorridos', data: [totalKm], backgroundColor: 'rgba(234, 88, 12, 0.8)', borderColor: '#c2410c', borderWidth: 1, borderRadius: 6, hoverBackgroundColor: '#c2410c', order: 1 }
+                            ]
+                        },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = (chartElement[0] && chartElement[0].datasetIndex === 1) ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { if (activeElements[0].datasetIndex === 1) { kmBudgetViewMode = 'fleet'; document.getElementById('btn-back-km-budget').classList.remove('hidden'); document.getElementById('km-budget-title-text').innerHTML = "🎯 Presupuesto: Desglose por Flota"; loadKmBudgetChart(); } } }, plugins: { legend: { display: true, position: 'bottom' }, tooltip: { callbacks: { label: function(context) { const msg = context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; return context.datasetIndex === 1 ? msg + ' (Clic para desglose)' : msg; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Kilómetros (km)' } }, x: { ticks: { display: false } } } },
+                        plugins: [{ id: 'budgetTotalLabels', afterDatasetsDraw(chart) { const { ctx, chartArea: { left, right }, scales: { y } } = chart; const yPos = y.getPixelForValue(BUDGET_KM); ctx.save(); ctx.beginPath(); ctx.setLineDash([5, 5]); ctx.moveTo(left, yPos); ctx.lineTo(right, yPos); ctx.lineWidth = 2; ctx.strokeStyle = '#c2410c'; ctx.stroke(); ctx.restore(); chart.data.datasets.forEach((dataset, i) => { if (dataset.type === 'line') return; const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                } else if (kmBudgetViewMode === 'fleet') {
+                    kmBudgetChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: fleetData.map(d => d.flota), datasets: [{ label: 'KM Recorridos', data: fleetData.map(d => d.km), backgroundColor: 'rgba(234, 88, 12, 0.8)', borderColor: '#c2410c', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: '#c2410c' }] },
+                        options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; }, onClick: (e, activeElements) => { if (activeElements.length > 0) { const clickedIndex = activeElements[0].index; kmBudgetSelectedFleet = kmBudgetChartInstance.data.labels[clickedIndex]; kmBudgetViewMode = 'unit'; document.getElementById('km-budget-title-text').innerHTML = `🎯 Presupuesto - Unidades de Flota: <span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-sm">${kmBudgetSelectedFleet}</span>`; loadKmBudgetChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km (Clic para ver unidades)'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false } } } },
+                        plugins: [{ id: 'budgetFleetLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                } else if (kmBudgetViewMode === 'unit') {
+                    const unitsInSelectedFleet = kmBudgetFilterData.filter(u => u.fleet === kmBudgetSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
+                    const finalUnitParam = encodeURIComponent(unitsInSelectedFleet.join(','));
+                    const resUnits = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${finalUnitParam}`);
+                    const responseUnits = await resUnits.json();
+                    const finalUnitData = responseUnits.data || [];
+                    kmBudgetChartInstance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { labels: finalUnitData.map(d => d.unit), datasets: [{ label: 'KM Recorridos', data: finalUnitData.map(d => d.km), backgroundColor: 'rgba(249, 115, 22, 0.8)', borderColor: '#ea580c', borderWidth: 1, borderRadius: 4 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                        plugins: [{ id: 'budgetUnitLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}); ctx.fillStyle = '#7c2d12'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                    });
+                }
+            } catch (e) { console.error("Error en gráfica de presupuesto", e); }
+        }
+
+        // ==========================================
+        // 5. GRÁFICA: RENDIMIENTO TABLETA (CYAN)
+        // ==========================================
+        async function updateRendimientoFilters() {
+            const elM = document.getElementById('filter-month-rendimiento');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetList = document.getElementById('rendimiento-fleet-list');
+            fleetList.innerHTML = '<div class="text-xs text-slate-400 p-2">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getFleetFilterData&month=${m}`);
+                const data = await res.json();
+                rendimientoFilterData = data.units || []; 
+                fleetList.innerHTML = '';
+                if(data.fleets.length === 0) fleetList.innerHTML = '<div class="text-xs text-cyan-500 p-1">Sin datos</div>';
+                data.fleets.forEach(f => {
+                    fleetList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${f}" class="rendimiento-fleet-cb rounded text-cyan-600 focus:ring-cyan-500 h-4 w-4" checked onchange="renderRendimientoUnits()"><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${f}</label></div>`;
+                });
+                document.getElementById('check-all-rendimiento-fleets').checked = true;
+                renderRendimientoUnits(true); 
+            } catch(e) { fleetList.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function renderRendimientoUnits(autoLoad = false) {
+            const unitList = document.getElementById('rendimiento-unit-list');
+            const activeFleets = Array.from(document.querySelectorAll('.rendimiento-fleet-cb:checked')).map(cb => cb.value);
+            unitList.innerHTML = '';
+            const filteredUnits = rendimientoFilterData.filter(u => activeFleets.includes(u.fleet)).map(u => u.unit);
+            const uniqueUnits = [...new Set(filteredUnits)].sort();
+            if(uniqueUnits.length === 0) {
+                unitList.innerHTML = '<div class="text-xs text-cyan-500 p-1">Sin unidades en flotas seleccionadas</div>';
+            } else {
+                uniqueUnits.forEach(u => {
+                    unitList.innerHTML += `<div class="flex items-center gap-2 hover:bg-slate-50 p-1 rounded"><input type="checkbox" value="${u}" class="rendimiento-unit-cb rounded text-cyan-600 focus:ring-cyan-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.click()">${u}</label></div>`;
+                });
+            }
+            document.getElementById('check-all-rendimiento-units').checked = true;
+            if(autoLoad) resetRendimientoView();
+        }
+
+        function resetRendimientoView() {
+            rendimientoViewMode = 'fleet';
+            rendimientoSelectedFleet = null;
+            document.getElementById('btn-back-rendimiento').classList.add('hidden');
+            document.getElementById('rendimiento-title-text').innerHTML = "🚀 Rendimiento Tableta por Flota";
+            loadRendimientoChart();
+        }
+
+        function backRendimiento() { resetRendimientoView(); }
+
+        async function loadRendimientoChart() {
+            const elM = document.getElementById('filter-month-rendimiento');
+            if(!elM) return;
+            const m = elM.value;
+            const fleetCbs = document.querySelectorAll('.rendimiento-fleet-cb:checked');
+            const unitCbs = document.querySelectorAll('.rendimiento-unit-cb:checked');
+            const selectedFleets = Array.from(fleetCbs).map(cb => cb.value);
+            const selectedUnits = Array.from(unitCbs).map(cb => cb.value);
+
+            if(selectedFleets.length === 0 || selectedUnits.length === 0) { 
+                if(rendimientoChartInstance) rendimientoChartInstance.destroy();
+                document.getElementById('rendimiento-promedio-text').textContent = "0.00";
+                return; 
+            }
+            try {
+                let queryUnits = selectedUnits;
+                let groupBy = 'fleet';
+                if (rendimientoViewMode === 'unit') {
+                    groupBy = 'unit';
+                    const unitsInSelectedFleet = rendimientoFilterData.filter(u => u.fleet === rendimientoSelectedFleet && selectedUnits.includes(u.unit)).map(u => u.unit);
+                    queryUnits = unitsInSelectedFleet;
+                }
+                const fleetsParam = encodeURIComponent(selectedFleets.join(','));
+                const unitsParam = encodeURIComponent(queryUnits.join(','));
+                const res = await fetch(`reportes.php?action=getTabletRendimientoStats&month=${m}&fleets=${fleetsParam}&units=${unitsParam}&groupBy=${groupBy}`);
+                const response = await res.json();
+                const rawData = response.data || [];
+                const promedio = parseFloat(response.promedio || 0);
+                document.getElementById('rendimiento-promedio-text').textContent = promedio.toFixed(2);
+
+                if (rendimientoChartInstance) rendimientoChartInstance.destroy();
+                const ctx = document.getElementById('rendimientoChart').getContext('2d');
+                rendimientoChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: rawData.map(d => d.label), datasets: [{ label: 'Rendimiento (km/l)', data: rawData.map(d => d.rendimiento), backgroundColor: 'rgba(6, 182, 212, 0.8)', borderColor: '#0891b2', borderWidth: 1, borderRadius: 4, hoverBackgroundColor: '#0891b2' }] },
+                    options: { responsive: true, maintainAspectRatio: false, onHover: (event, chartElement) => { if(rendimientoViewMode === 'fleet') { event.native.target.style.cursor = chartElement[0] ? 'pointer' : 'default'; } else { event.native.target.style.cursor = 'default'; } }, onClick: (e, activeElements) => { if (rendimientoViewMode === 'fleet' && activeElements.length > 0) { const clickedIndex = activeElements[0].index; rendimientoSelectedFleet = rendimientoChartInstance.data.labels[clickedIndex]; rendimientoViewMode = 'unit'; document.getElementById('btn-back-rendimiento').classList.remove('hidden'); document.getElementById('rendimiento-title-text').innerHTML = `🚀 Rendimiento - Unidades de: <span class="bg-cyan-100 text-cyan-800 px-2 py-1 rounded text-sm">${rendimientoSelectedFleet}</span>`; loadRendimientoChart(); } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { let txt = context.parsed.y.toFixed(2) + ' km/l'; if (rendimientoViewMode === 'fleet') txt += ' (Clic para unidades)'; return txt; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Rendimiento (km/l)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                    plugins: [{ id: 'rendimientoLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toFixed(2); ctx.fillStyle = '#164e63'; ctx.font = 'bold 11px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch (e) { console.error("Error en gráfica de rendimiento", e); }
+        }
+
+        // ==========================================
+        // OTRAS GRÁFICAS (MANTENIDAS)
+        // ==========================================
+        async function updateKmFilters() {
+            const elM = document.getElementById('filter-month-km-chart');
+            if(!elM) return;
+            const m = elM.value;
+            const listContainer = document.getElementById('unit-checkbox-list');
+            listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getUnitsByMonth&month=${m}`);
+                const units = await res.json();
+                listContainer.innerHTML = '';
+                if (units.length === 0) { listContainer.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos en este mes</div>'; return; }
+                units.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded';
+                    div.innerHTML = `<input type="checkbox" value="${u}" class="unit-checkbox rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked">${u}</label>`;
+                    listContainer.appendChild(div);
+                });
+                document.getElementById('check-all-units').checked = true;
+                loadKmChart();
+            } catch (e) { listContainer.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        async function loadKmChart() {
+            const elM = document.getElementById('filter-month-km-chart');
+            if(!elM) return;
+            const m = elM.value;
+            const checkboxes = document.querySelectorAll('.unit-checkbox:checked');
+            const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
+            if(selectedUnits.length === 0 && document.querySelectorAll('.unit-checkbox').length > 0) { alert("Selecciona al menos una unidad"); return; }
+            try {
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getKmStats&month=${m}&units=${unitsParam}`);
+                const response = await res.json();
+                document.getElementById('km-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {maximumFractionDigits: 0});
+                const data = response.data || [];
+                if (kmChartInstance) kmChartInstance.destroy();
+                const ctx = document.getElementById('kmChart').getContext('2d');
+                kmChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: data.map(d => d.unit), datasets: [{ label: 'Kilómetros Recorridos', data: data.map(d => d.km), backgroundColor: 'rgba(16, 185, 129, 0.6)', borderColor: 'rgba(16, 185, 129, 1)', borderWidth: 1, borderRadius: 4 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' km'; } } } }, scales: { y: { beginAtZero: true, title: { display: true, text: 'Distancia (km)' } }, x: { ticks: { autoSkip: false, maxRotation: 90, minRotation: 45 } } } },
+                    plugins: [{ id: 'customLabels', afterDatasetsDraw(chart) { const { ctx } = chart; chart.data.datasets.forEach((dataset, i) => { const meta = chart.getDatasetMeta(i); meta.data.forEach((bar, index) => { const value = dataset.data[index]; if(value > 0){ const valueStr = value.toLocaleString('es-MX', {maximumFractionDigits:0}) + ' km'; ctx.fillStyle = '#064e3b'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom'; ctx.fillText(valueStr, bar.x, bar.y - 5); } }); }); } }]
+                });
+            } catch(e) { console.error("Error chart KM", e); }
+        }
+
+        async function loadTabletChart() {
+            const elM = document.getElementById('filter-month-tablet-chart');
+            if(!elM) return;
+            try {
+                const m = elM.value;
+                const res = await fetch(`reportes.php?action=getTabletStats&month=${m}`);
+                if(!res.ok) throw new Error('Error Server');
+                const response = await res.json();
+                document.getElementById('tablet-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits: 1});
+                const data = response.data || [];
+                if(tabletChartInstance) tabletChartInstance.destroy();
+                const ctx = document.getElementById('tabletChart').getContext('2d');
+                tabletChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { 
+                        labels: data.map(d => d.dia), 
+                        datasets: [{ 
+                            label: 'Consumo Diesel', 
+                            data: data.map(d => d.total), 
+                            backgroundColor: 'rgba(37, 99, 235, 0.6)', 
+                            borderColor: 'rgba(37, 99, 235, 1)', 
+                            borderWidth: 1, 
+                            borderRadius: 4 
+                        }] 
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { return context.parsed.y.toLocaleString('es-MX') + ' L'; } } } }, scales: { y: { beginAtZero: true } } }
+                });
+            } catch(e) { console.error("Error cargando gráfica tableta:", e); }
+        }
+
+        // --- Gráficas Ocultas ---
+        async function loadTankBalanceChart() {
+            const elM = document.getElementById('filter-month-tank-balance');
+            if(!elM) return;
+            try {
+                const m = elM.value;
+                const res = await fetch(`fetch_tank_balance.php?month=${m}`);
+                const response = await res.json();
+                if (response.status !== 'success') throw new Error(response.message);
+
+                const dailyData = response.daily || [];
+                const auditData = response.audit || [];
+                const daysInMonth = new Date(m.split('-')[0], m.split('-')[1], 0).getDate();
+                const labels = [];
+                for(let i=1; i<=daysInMonth; i++) { labels.push(`${m}-${String(i).padStart(2, '0')}`); }
+
+                const dailyConsumoMap = {};
+                dailyData.forEach(d => dailyConsumoMap[d.dia] = parseFloat(d.total));
+                const auditMap = {};
+                auditData.forEach(a => auditMap[a.fecha_corte] = parseFloat(a.discrepancia));
+
+                const dataConsumo = labels.map(date => dailyConsumoMap[date] || 0);
+                const dataAudit = labels.map(date => auditMap[date] !== undefined ? auditMap[date] : null);
+
+                if (tankBalanceChartInstance) tankBalanceChartInstance.destroy();
+                const ctx = document.getElementById('tankBalanceChart').getContext('2d');
+                
+                tankBalanceChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels.map(l => l.split('-')[2]),
+                        datasets: [
+                            { type: 'line', label: '🚨 Discrepancia Detectada (Faltante)', data: dataAudit, borderColor: '#dc2626', backgroundColor: '#dc2626', borderWidth: 3, pointRadius: 6, pointHoverRadius: 8, pointStyle: 'rectRot', fill: false, spanGaps: true, yAxisID: 'yAudit', order: 0 },
+                            { type: 'bar', label: 'Consumo Tableta (Diario)', data: dataConsumo, backgroundColor: 'rgba(59, 130, 246, 0.2)', borderColor: 'rgba(59, 130, 246, 0.5)', borderWidth: 1, yAxisID: 'yConsumo', order: 1 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { label: function(context) { let val = context.raw; if(val === null) return null; return context.dataset.label + ': ' + val.toLocaleString('es-MX') + ' L'; }, afterBody: function(context) { if(context[0].dataset.type === 'line') { const idx = context[0].dataIndex; const date = labels[idx]; const auditInfo = auditData.find(a => a.fecha_corte === date); if(auditInfo) { return [ `----------------`, `Real (Físico): ${parseFloat(auditInfo.consumo_fisico).toLocaleString()} L`, `Reportado (App): ${parseFloat(auditInfo.consumo_digital).toLocaleString()} L`, `Nivel Tanque: ${parseFloat(auditInfo.nivel_real).toLocaleString()} L` ]; } } } } } }, scales: { yAudit: { type: 'linear', display: true, position: 'left' }, yConsumo: { type: 'linear', display: true, position: 'right' } } }
+                });
+            } catch (e) { console.error("Error chart Tank", e); }
+        }
+
+        async function loadManzanilloChart() {
+            const elM = document.getElementById('filter-month-manzanillo-chart');
+            if(!elM) return;
+            try {
+                const m = elM.value;
+                const res = await fetch(`reportes.php?action=getManzanilloDailyStats&month=${m}`);
+                if(!res.ok) throw new Error('Error Server');
+                const response = await res.json();
+                document.getElementById('manzanillo-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits: 1});
+                const data = response.data || [];
+                if(manzanilloChartInstance) manzanilloChartInstance.destroy();
+                const ctx = document.getElementById('manzanilloChart').getContext('2d');
+                manzanilloChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: { labels: data.map(d => d.dia), datasets: [{ label: 'Consumo Diario Manzanillo (L)', data: data.map(d => parseFloat(d.total_litros || 0)), borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.1)', borderWidth: 2, tension: 0.2, fill: true, borderDash: [5, 5] }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            } catch(e) { console.error(e); }
+        }
+
+        async function updateDieselUnitFilters() {
+            const elM = document.getElementById('filter-month-diesel-unit');
+            if(!elM) return;
+            const m = elM.value;
+            const listContainer = document.getElementById('diesel-unit-checkbox-list');
+            listContainer.innerHTML = '<div class="text-xs text-slate-400">Cargando...</div>';
+            try {
+                const res = await fetch(`reportes.php?action=getDieselUnitsByMonth&month=${m}`);
+                const units = await res.json();
+                listContainer.innerHTML = '';
+                if (units.length === 0) { listContainer.innerHTML = '<div class="text-xs text-orange-500 p-1">Sin datos</div>'; return; }
+                units.forEach(u => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center gap-2 hover:bg-slate-50 p-1 rounded';
+                    div.innerHTML = `<input type="checkbox" value="${u}" class="diesel-unit-checkbox rounded text-blue-600 focus:ring-blue-500 h-4 w-4" checked><label class="text-xs text-slate-700 font-medium cursor-pointer flex-grow" onclick="this.previousElementSibling.checked = !this.previousElementSibling.checked">${u}</label>`;
+                    listContainer.appendChild(div);
+                });
+                document.getElementById('check-all-diesel-units').checked = true;
+                loadDieselUnitChart();
+            } catch (e) { listContainer.innerHTML = '<div class="text-xs text-rose-500">Error</div>'; }
+        }
+
+        function toggleDieselUnitDropdown() { document.getElementById('diesel-unit-dropdown').classList.toggle('hidden'); }
+        function toggleAllDieselUnits(source) { document.querySelectorAll('.diesel-unit-checkbox').forEach(cb => cb.checked = source.checked); }
+
+        async function loadDieselUnitChart() {
+            const elM = document.getElementById('filter-month-diesel-unit');
+            if(!elM) return;
+            const m = elM.value;
+            const checkboxes = document.querySelectorAll('.diesel-unit-checkbox:checked');
+            const selectedUnits = Array.from(checkboxes).map(cb => cb.value);
+            if(selectedUnits.length === 0 && document.querySelectorAll('.diesel-unit-checkbox').length > 0) { alert("Selecciona unidad"); return; }
+            try {
+                const unitsParam = encodeURIComponent(selectedUnits.join(','));
+                const res = await fetch(`reportes.php?action=getDieselStatsByUnit&month=${m}&units=${unitsParam}`);
+                const response = await res.json();
+                document.getElementById('diesel-unit-month-total').textContent = parseFloat(response.total_acumulado || 0).toLocaleString('es-MX', {minimumFractionDigits:1, maximumFractionDigits:1});
+                const data = response.data || [];
+                if (dieselUnitChartInstance) dieselUnitChartInstance.destroy();
+                const ctx = document.getElementById('dieselUnitChart').getContext('2d');
+                dieselUnitChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: data.map(d => d.unit), datasets: [{ label: 'Consumo Diesel (L)', data: data.map(d => d.fuel), backgroundColor: 'rgba(29, 78, 216, 0.6)', borderColor: 'rgba(29, 78, 216, 1)', borderWidth: 1 }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+                });
+            } catch(e) { console.error("Error chart Diesel Unit", e); }
+        }
+
+        function toggleUnitDropdown() { document.getElementById('unit-dropdown').classList.toggle('hidden'); }
+        function toggleAllUnits(source) { document.querySelectorAll('.unit-checkbox').forEach(cb => cb.checked = source.checked); }
+
+        // --- FUNCIONES VARIAS (ALMACÉN, TOMAS, ETC) ---
+        function initDashboard() {
+            const today = new Date();
+            const m = today.toISOString().slice(0, 7);
+            
+            const elDate = document.getElementById('current-date');
+            if(elDate) elDate.textContent = today.toLocaleDateString('es-MX', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+            
+            ['consolidated','report','tablet', 'diesel-full', 'diesel', 'manzanillo', 'rendimiento-detalle'].forEach(id => {
+                const el = document.getElementById(`filter-month-${id}`);
+                if(el) el.value = m;
+            });
+
+            const dieselFilter = document.getElementById('filter-diesel-month');
+            if(dieselFilter) dieselFilter.value = m; 
+            
+            fetchNewDieselReport();
+            fetchConsolidatedReports(m); 
+            fetchReports(m); 
+            fetchTabletReports(m);
+            fetchManzanillo();
+            fetchRendimientoDetalle(); 
+
+            // Filtros de Gráficas
+            const tabletChartFilter = document.getElementById('filter-month-tablet-chart');
+            if(tabletChartFilter) { tabletChartFilter.value = m; loadTabletChart(); }
+            const kmFilter = document.getElementById('filter-month-km-chart');
+            if(kmFilter) { kmFilter.value = m; updateKmFilters(); }
+            const fleetMonthFilter = document.getElementById('filter-month-fleet');
+            if(fleetMonthFilter) { fleetMonthFilter.value = m; updateFleetFilters(); }
+            const kmFleetMonthFilter = document.getElementById('filter-month-km-fleet');
+            if(kmFleetMonthFilter) { kmFleetMonthFilter.value = m; updateKmFleetFilters(); }
+            const kmForecastMonthFilter = document.getElementById('filter-month-km-forecast');
+            if(kmForecastMonthFilter) { kmForecastMonthFilter.value = m; updateKmForecastFilters(); }
+            const kmBudgetMonthFilter = document.getElementById('filter-month-km-budget');
+            if(kmBudgetMonthFilter) { kmBudgetMonthFilter.value = m; updateKmBudgetFilters(); }
+            const rendimientoMonthFilter = document.getElementById('filter-month-rendimiento');
+            if(rendimientoMonthFilter) { rendimientoMonthFilter.value = m; updateRendimientoFilters(); }
+            
+            const xmlInp = document.getElementById('xmlInput');
+            if(xmlInp) {
+                xmlInp.onchange = function() { 
+                    const nameEl = document.getElementById('xml-name');
+                    if(nameEl) nameEl.textContent = this.files[0] ? this.files[0].name : ''; 
+                };
+            }
+            
+            const uploadF = document.getElementById('uploadForm');
+            if(uploadF) {
+                uploadF.onsubmit = async function(e) {
+                    e.preventDefault();
+                    const s = document.getElementById('upload-status'); 
+                    if(s) { s.textContent = "Procesando..."; s.className = "mt-8 text-sm font-bold text-blue-600 animate-pulse"; }
+                    try {
+                        const res = await fetch('upload.php', { method: 'POST', body: new FormData(this) });
+                        const r = await res.json();
+                        if(s) { s.textContent = r.message; s.className = `mt-8 text-sm font-bold ${r.status==='success'?'text-emerald-600':'text-rose-600'}`; }
+                        if(r.status === 'success') { 
+                            fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                            fetchReports(document.getElementById('filter-month-report').value); 
+                            fetchNewDieselReport(); 
+                        }
+                    } catch(e) { 
+                        if(s) { s.textContent = "Error de conexión"; s.className = "mt-8 text-sm font-bold text-rose-600"; }
+                    }
+                };
+            }
+
+            const btnFC = document.getElementById('btn-filter-consolidated');
+            if(btnFC) btnFC.onclick = () => fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, document.getElementById('filter-unit-consolidated').value);
+            
+            const btnCC = document.getElementById('btn-clear-consolidated');
+            if(btnCC) btnCC.onclick = () => { document.getElementById('filter-unit-consolidated').value = ''; fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value, ''); };
+            
+            const btnFR = document.getElementById('btn-filter-report');
+            if(btnFR) btnFR.onclick = () => fetchReports(document.getElementById('filter-month-report').value);
+            
+            const btnFT = document.getElementById('btn-filter-tablet');
+            if(btnFT) btnFT.onclick = () => fetchTabletReports(document.getElementById('filter-month-tablet').value);
+        }
+
+        // INIT LOGIN / APP
+        document.addEventListener('DOMContentLoaded', () => {
+            if (sessionStorage.getItem('auth_fulltrack') === 'true') {
+                unlockSystem(false); 
+            } else {
+                const loginForm = document.getElementById('login-form');
+                if(loginForm) {
+                    loginForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        const pin = document.getElementById('access-pin').value;
+                        const msg = document.getElementById('login-msg');
+                        const btn = e.target.querySelector('button');
+                        msg.textContent = "Verificando...";
+                        btn.disabled = true; btn.classList.add('opacity-75');
+                        try {
+                            const res = await fetch('verify_pin.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ pin }) });
+                            const data = await res.json();
+                            if (data.status === 'success') { sessionStorage.setItem('auth_fulltrack', 'true'); unlockSystem(true); } 
+                            else { msg.textContent = "⛔ " + (data.message || "NIP Incorrecto"); vibrateError(); document.getElementById('access-pin').value = ''; document.getElementById('access-pin').focus(); }
+                        } catch (err) { msg.textContent = "⚠️ Error de conexión"; } finally { btn.disabled = false; btn.classList.remove('opacity-75'); }
+                    });
+                }
+            }
+
+            // Bind upload form for Diesel Entry
+            const formUploadDiesel = document.getElementById('form-upload-diesel');
+            if (formUploadDiesel) {
+                formUploadDiesel.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const base = document.getElementById('upload-diesel-base').value;
+                    const fileInput = document.getElementById('upload-diesel-file');
+                    if(!base) { alert("Selecciona una base"); return; }
+                    if(fileInput.files.length === 0) { alert("Selecciona un archivo XML"); return; }
+
+                    const formData = new FormData();
+                    formData.append('entryFile', fileInput.files[0]);
+                    formData.append('base', base); 
+
+                    const btn = this.querySelector('button[type="submit"]');
+                    const originalText = btn.textContent; btn.textContent = "Procesando..."; btn.disabled = true;
+
+                    try {
+                        const res = await fetch('upload_diesel_entry.php', { method: 'POST', body: formData });
+                        const resp = await res.json();
+                        if (resp.status === 'success') { 
+                            alert("✅ " + resp.message); 
+                            document.getElementById('modal-upload-diesel').classList.add('hidden'); 
+                            fetchDieselEntries(); 
+                        } else { 
+                            alert("❌ Error: " + resp.message); 
+                        }
+                    } catch (e) { 
+                        alert("❌ Error de conexión."); 
+                    } finally { 
+                        btn.textContent = originalText; btn.disabled = false; 
+                    }
+                });
+            }
+        });
+
+        function unlockSystem(animate) {
+            const overlay = document.getElementById('login-overlay');
+            if(overlay) {
+                if (animate) { overlay.classList.add('opacity-0', 'pointer-events-none'); setTimeout(() => { overlay.style.display = 'none'; }, 500); } 
+                else { overlay.style.display = 'none'; }
+            }
+            initDashboard(); 
+        }
+
+        function vibrateError() {
+            const modal = document.getElementById('login-modal');
+            if(modal) {
+                modal.classList.add('animate-[shake_0.3s_ease-in-out]');
+                setTimeout(() => modal.classList.remove('animate-[shake_0.3s_ease-in-out]'), 300);
+            }
+        }
+
+        function closeModal(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden'); 
+        }
+
+        // ==========================================
+        // EDICIÓN Y EXPORTACIÓN
+        // ==========================================
+        function openEditDiesel(data) {
+            document.getElementById('edit-diesel-id').value = data.id;
+            document.getElementById('edit-diesel-unit').value = data.unit_number || '';
+            document.getElementById('edit-diesel-hubo').value = String(data.km_hubodometro || '').replace(/,/g, '');
+            document.getElementById('edit-diesel-km').value = String(data.km_recorrido || '').replace(/,/g, '');
+            document.getElementById('edit-diesel-fuel').value = String(data.combustible_viaje || '').replace(/,/g, '');
+            document.getElementById('modal-edit-diesel').classList.remove('hidden');
+        }
+
+        async function saveDieselChanges() {
+            const id = document.getElementById('edit-diesel-id').value;
+            const unit = document.getElementById('edit-diesel-unit').value.trim();
+            const hubo = document.getElementById('edit-diesel-hubo').value;
+            const km = document.getElementById('edit-diesel-km').value;
+            const litros = document.getElementById('edit-diesel-fuel').value;
+
+            try {
+                const res = await fetch('update_data.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_diesel', id: id, unit: unit, hubo: hubo, km: km, litros: litros }) });
+                const resp = await res.json();
+                if(resp.status === 'success') { 
+                    closeModal('modal-edit-diesel'); 
+                    const m = document.getElementById('filter-month-report').value; 
+                    fetchReports(m); 
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                    fetchRendimientoDetalle(); 
+                    alert("✅ " + resp.message); 
+                } else { alert("❌ Error: " + resp.message); }
+            } catch(e) { alert("Error de conexión"); }
+        }
+
+        function openEditTablet(data) {
+            document.getElementById('edit-tablet-id').value = data.id;
+            document.getElementById('edit-tablet-bitacora').value = data.bitacora_number || '';
+            document.getElementById('edit-tablet-km-ini').value = String(data.km_inicio || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-km-fin').value = String(data.km_fin || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-diesel').value = String(data.litros_diesel || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-vales').value = String(data.litros_auto || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-urea').value = String(data.litros_urea || '').replace(/,/g, '');
+            document.getElementById('edit-tablet-totalizador').value = String(data.litros_totalizador || '').replace(/,/g, '');
+            document.getElementById('modal-edit-tablet').classList.remove('hidden');
+        }
+
+        async function saveTabletChanges() {
+            const id = document.getElementById('edit-tablet-id').value;
+            const bitacora = document.getElementById('edit-tablet-bitacora').value;
+            const km_ini = document.getElementById('edit-tablet-km-ini').value;
+            const km_fin = document.getElementById('edit-tablet-km-fin').value;
+            const diesel = document.getElementById('edit-tablet-diesel').value;
+            const vales = document.getElementById('edit-tablet-vales').value;
+            const urea = document.getElementById('edit-tablet-urea').value;
+            const totalizador = document.getElementById('edit-tablet-totalizador').value;
+
+            try {
+                const res = await fetch('update_data.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'update_tablet', id: id, bitacora: bitacora, km_ini: km_ini, km_fin: km_fin, diesel: diesel, vales: vales, urea: urea, totalizador: totalizador }) });
+                const resp = await res.json();
+                if(resp.status === 'success') { 
+                    closeModal('modal-edit-tablet'); 
+                    const m = document.getElementById('filter-month-tablet').value; 
+                    fetchTabletReports(m); 
+                    fetchConsolidatedReports(document.getElementById('filter-month-consolidated').value); 
+                    fetchRendimientoDetalle(); 
+                    alert("✅ " + resp.message); 
+                } else { alert("❌ Error: " + resp.message); }
+            } catch(e) { alert("Error de conexión"); }
+        }
+
+        function openUploadDieselModal() {
+            const form = document.getElementById('form-upload-diesel');
+            if(form) form.reset();
+            const fn = document.getElementById('file-name-display');
+            if(fn) fn.textContent = '';
+            const modal = document.getElementById('modal-upload-diesel');
+            if(modal) modal.classList.remove('hidden');
+        }
+
+        async function fetchDieselEntries() {
+            const tbody = document.getElementById('dieselEntryTableBody');
+            const month = document.getElementById('filter-diesel-month') ? document.getElementById('filter-diesel-month').value : '';
+            const folio = document.getElementById('filter-diesel-folio') ? document.getElementById('filter-diesel-folio').value.trim() : '';
+            const provider = document.getElementById('filter-diesel-provider') ? document.getElementById('filter-diesel-provider').value.trim() : '';
+            const base = document.getElementById('filter-diesel-base') ? document.getElementById('filter-diesel-base').value : '';
+            const params = new URLSearchParams({ month: month, folio: folio, proveedor: provider, base: base });
+
+            if(!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-slate-400 font-bold animate-pulse">Filtrando facturas...</td></tr>';
+            try {
+                const res = await fetch(`fetch_diesel_entries.php?${params.toString()}`);
+                const data = await res.json();
+                tbody.innerHTML = '';
+                if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-slate-400 italic">No se encontraron registros.</td></tr>'; return; }
+                data.forEach(item => {
+                    const row = tbody.insertRow();
+                    row.className = "hover:bg-emerald-50/50 transition duration-150 group";
+                    const litrosFloat = parseFloat(item.litros) || 0;
+                    const totalFloat = parseFloat(item.importe_total) || 0;
+                    const pUnitarioCalc = litrosFloat > 0 ? (totalFloat / litrosFloat) : 0;
+
+                    let badgeClass = "bg-slate-100 text-slate-600";
+                    if(item.base === 'García') badgeClass = "bg-blue-100 text-blue-800 border-blue-200";
+                    if(item.base === 'Manzanillo') badgeClass = "bg-indigo-100 text-indigo-800 border-indigo-200";
+                    if(item.base === 'San Luis') badgeClass = "bg-orange-100 text-orange-800 border-orange-200";
+
+                    row.innerHTML = `
+                        <td class="px-4 py-3 border-r border-slate-100 whitespace-nowrap"><span class="px-2 py-1 rounded text-xs font-bold border ${badgeClass}">${item.base || 'N/D'}</span></td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-slate-600 font-medium whitespace-nowrap">${item.fecha_factura}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 font-bold text-slate-700 whitespace-nowrap">${item.folio || 'S/N'}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-slate-500 text-xs uppercase tracking-wide group-hover:text-slate-700 truncate max-w-[150px]" title="${item.proveedor}">${item.proveedor}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 bg-purple-50/20"><div class="text-xs font-bold text-purple-800 truncate max-w-[150px]">${item.receptor_nombre || 'N/D'}</div><div class="text-[10px] text-purple-500 font-mono">${item.receptor_rfc || ''}</div></td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono text-blue-600 font-bold bg-blue-50/30">${litrosFloat.toLocaleString('es-MX', {minimumFractionDigits: 2})} L</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono font-bold text-amber-800 bg-amber-50">${pUnitarioCalc.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})}</td>
+                        <td class="px-4 py-3 border-r border-slate-100 text-right font-mono font-medium text-emerald-600 bg-emerald-50/30">${parseFloat(item.subtotal || 0).toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})}</td>
+                        <td class="px-4 py-3 text-right font-bold text-emerald-800 bg-emerald-100/30">${totalFloat.toLocaleString('es-MX', {style: 'currency', currency: 'MXN'})}</td>
+                    `;
+                });
+            } catch(e) { tbody.innerHTML = '<tr><td colspan="9" class="text-center p-10 text-rose-500 font-bold">Error al cargar.</td></tr>'; }
+        }
+
+        function clearDieselFilters() {
+            const today = new Date();
+            const elM = document.getElementById('filter-diesel-month');
+            const elB = document.getElementById('filter-diesel-base');
+            const elF = document.getElementById('filter-diesel-folio');
+            const elP = document.getElementById('filter-diesel-provider');
+            if(elM) elM.value = today.toISOString().slice(0, 7); 
+            if(elB) elB.value = "";
+            if(elF) elF.value = "";
+            if(elP) elP.value = "";
+            fetchDieselEntries(); 
+        }
+
+        function downloadXLS(type) {
+            let selector = `#panel-${type} table`;
+            if(type === 'diesel') selector = '#panel-report table'; 
+            let table = document.querySelector(selector);
+            
+            if(table) { 
+                const data = [];
+                const rows = table.querySelectorAll('tr');
+                rows.forEach(row => {
+                    const rowData = [];
+                    row.querySelectorAll('th, td').forEach(cell => rowData.push(cell.innerText.trim()));
+                    if(rowData.length > 0) data.push(rowData);
+                });
+                const ws = XLSX.utils.aoa_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Reporte");
+                XLSX.writeFile(wb, `Fulltrack_${type}_${new Date().toISOString().slice(0,10)}.xlsx`); 
+            } else { alert("No hay datos para exportar."); }
+        }
+
+        // --- MANZANILLO, TOMAS Y ALMACÉN ---
+        async function fetchManzanillo() {
+            const tbody = document.getElementById('manzanilloTableBody');
+            if(!tbody) return;
+            if (window.cachedManzanillo.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-slate-400 animate-pulse">Cargando...</td></tr>';
+                try {
+                    const res = await fetch('fetch_manzanillo.php');
+                    window.cachedManzanillo = await res.json();
+                } catch(e) { tbody.innerHTML = '<tr><td colspan="6" class="text-center p-10 text-rose-500">Error al cargar</td></tr>'; return; }
+            }
+            const elM = document.getElementById('filter-month-manzanillo');
+            const elU = document.getElementById('filter-unit-manzanillo');
+            const filterMonth = elM ? elM.value : ''; 
+            const filterUnit = elU ? elU.value.toUpperCase() : '';
+            let filteredData = window.cachedManzanillo;
+            if (filterMonth) {
+                filteredData = filteredData.filter(r => {
+                    if (!r.fecha_carga) return false;
+                    if (r.fecha_carga.includes('-')) return r.fecha_carga.startsWith(filterMonth);
+                    if (r.fecha_carga.includes('/')) { const p = r.fecha_carga.split('/'); if (p.length === 3) return `${p[2]}-${p[1]}` === filterMonth; }
+                    return false;
+                });
+            }
+            if (filterUnit) filteredData = filteredData.filter(r => (r.unidad || '').toUpperCase().includes(filterUnit));
+            tbody.innerHTML = filteredData.length ? '' : '<tr><td colspan="6" class="text-center p-10 text-slate-400">Sin coincidencias</td></tr>';
+            filteredData.forEach(r => {
+                const row = tbody.insertRow(); 
+                row.className = 'hover:bg-indigo-50/30';
+                row.innerHTML = `
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-500 text-xs">${r.id}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 font-bold text-slate-700">${r.unidad}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.fecha_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-slate-600">${r.hora_carga}</td>
+                    <td class="px-4 py-3 border-r border-indigo-50 text-right font-bold text-indigo-700">${parseFloat(r.litros_diesel || 0).toLocaleString('es-MX', {minimumFractionDigits: 2})}</td>
+                    <td class="px-4 py-3 text-xs text-slate-400 italic hidden">${r.nombre_archivo_origen}</td>
+                `;
+            });
+            const statusEl = document.getElementById('manzanillo-status');
+            if(statusEl) statusEl.textContent = `${filteredData.length} registros mostrados`;
+        }
+
+        async function uploadManzanillo(input) {
+            if (!input.files.length) return;
+            const s = document.getElementById('manzanillo-status'); 
+            if(s) { s.textContent = "Leyendo Excel..."; s.className = "text-xs font-bold text-blue-600 animate-pulse"; }
+            const file = input.files[0]; 
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1});
+                    if(s) s.textContent = "Enviando al servidor...";
+                    const res = await fetch('upload_manzanillo.php', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ data: jsonData, fileName: file.name }) });
+                    const d = await res.json();
+                    if (d.status === 'success') { 
+                        if(s) { s.textContent = `✓ ${d.inserted} nuevos, ${d.skipped} duplicados.`; s.className = "text-xs font-bold text-emerald-600"; }
+                        window.cachedManzanillo = []; 
+                        fetchManzanillo(); 
+                    } else { 
+                        if(s) { s.textContent = "Error: " + d.message; s.className = "text-xs font-bold text-rose-600"; }
+                    }
+                } catch (err) { 
+                    if(s) { s.textContent = "Error lectura Excel"; s.className = "text-xs font-bold text-rose-600"; }
+                }
+            };
+            reader.readAsArrayBuffer(file); 
+            input.value = ''; 
+        }
+
+        async function saveToma(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button[type="submit"]');
+            const originalText = btn.textContent; 
+            btn.textContent = "Guardando..."; 
+            btn.disabled = true;
+            try {
+                const res = await fetch('save_toma.php', { method: 'POST', body: new FormData(e.target) });
+                const data = await res.json();
+                if (data.status === 'success') { 
+                    alert("✅ Registro guardado"); 
+                    e.target.reset(); 
+                    const now = new Date(); 
+                    e.target.fecha.value = now.toISOString().split('T')[0]; 
+                    e.target.hora.value = now.toTimeString().split(' ')[0].substring(0,5); 
+                    fetchTomas(); 
+                } else { 
+                    alert("❌ Error: " + data.message); 
+                }
+            } catch (err) { 
+                alert("Error de conexión"); 
+            } finally { 
+                btn.textContent = originalText; 
+                btn.disabled = false; 
+            }
+        }
+
+        async function fetchTomas() {
+            const tbody = document.getElementById('tomasTableBody');
+            if(!tbody) return;
+            try {
+                const res = await fetch('fetch_tomas.php'); 
+                const data = await res.json(); 
+                tbody.innerHTML = '';
+                if (data.length > 0) { 
+                    updateTankChart(data[0].litros); 
+                } else { 
+                    updateTankChart(0); 
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; 
+                    return; 
+                }
+                data.forEach(item => {
+                    const row = tbody.insertRow(); 
+                    row.className = "hover:bg-purple-50 transition border-b border-slate-50";
+                    row.innerHTML = `
+                        <td class="px-4 py-3 font-bold text-slate-700 border-r border-slate-100">${item.no_muestra}</td>
+                        <td class="px-4 py-3 text-slate-600 border-r border-slate-100">${item.fecha}</td>
+                        <td class="px-4 py-3 text-slate-500 font-mono border-r border-slate-100">${item.hora}</td>
+                        <td class="px-4 py-3 text-right font-bold text-purple-700 bg-purple-50/30">${parseFloat(item.litros).toLocaleString('es-MX', {minimumFractionDigits:2})} L</td>
+                    `;
+                });
+            } catch (err) { 
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-rose-500">Error.</td></tr>'; 
+            }
+        }
+
+        function updateTankChart(currentLitros) {
+            const maxCapacity = 30000; 
+            const current = parseFloat(currentLitros) || 0;
+            const visualCurrent = current > maxCapacity ? maxCapacity : current; 
+            const emptySpace = maxCapacity - visualCurrent;
+            const textEl = document.getElementById('tankLevelText');
+            if(textEl) textEl.textContent = current.toLocaleString('es-MX') + ' L';
+            const percEl = document.getElementById('tankPercentText');
+            if(percEl) percEl.textContent = ((current / maxCapacity) * 100).toFixed(1) + '% Lleno';
+            const elCtx = document.getElementById('tankChart');
+            if(!elCtx) return;
+            const ctx = elCtx.getContext('2d');
+            if (window.tankChartInstance) window.tankChartInstance.destroy();
+            window.tankChartInstance = new Chart(ctx, {
+                type: 'bar', data: { labels: ['Nivel'], datasets: [
+                    { label: 'Disponible', data: [visualCurrent], backgroundColor: '#9333ea', borderRadius: { bottomLeft: 10, bottomRight: 10 }, barPercentage: 0.7, categoryPercentage: 0.8 },
+                    { label: 'Espacio Vacío', data: [emptySpace], backgroundColor: '#e2e8f0', borderRadius: { topLeft: 10, topRight: 10 }, barPercentage: 0.7, categoryPercentage: 0.8 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => c.dataset.label + ': ' + c.raw.toLocaleString('es-MX') + ' L' } } }, scales: { x: { stacked: true, display: false }, y: { stacked: true, min: 0, max: maxCapacity, display: false } }, animation: { duration: 1500, easing: 'easeOutQuart' } }
+            });
+        }
+
+        function openModalAlmacen() {
+            const f = document.getElementById('formAlmacen');
+            if(f) f.reset();
+            const now = new Date();
+            const elD = document.getElementById('alm-fecha');
+            if(elD) elD.value = now.toISOString().split('T')[0];
+            const elH = document.getElementById('alm-hora');
+            if(elH) elH.value = now.toTimeString().split(' ')[0].substring(0,5);
+            const m = document.getElementById('modal-new-almacen');
+            if(m) m.classList.remove('hidden');
+        }
+
+        function closeModalAlmacen() { 
+            const m = document.getElementById('modal-new-almacen');
+            if(m) m.classList.add('hidden'); 
+        }
+
+        async function saveEntradaAlmacen(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button'); 
+            const orig = btn.textContent; 
+            btn.textContent = "Guardando..."; 
+            btn.disabled = true;
+            try {
+                const res = await fetch('almacen.php', { method: 'POST', body: new FormData(e.target) });
+                const data = await res.json();
+                if (data.status === 'success') { 
+                    alert("✅ " + data.message); 
+                    closeModalAlmacen(); 
+                    fetchEntradasAlmacen(); 
+                } else { 
+                    alert("❌ " + data.message); 
+                }
+            } catch (err) { 
+                alert("Error de conexión"); 
+            } finally { 
+                btn.textContent = orig; 
+                btn.disabled = false; 
+            }
+        }
+
+        async function fetchEntradasAlmacen() {
+            const tbody = document.getElementById('almacenTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-400 italic">Cargando...</td></tr>';
+            try {
+                const res = await fetch('almacen.php'); 
+                const data = await res.json(); 
+                tbody.innerHTML = '';
+                if (data.length === 0) { 
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-slate-400">Sin registros.</td></tr>'; 
+                    return; 
+                }
+                data.forEach(item => {
+                    const row = tbody.insertRow(); 
+                    row.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                    const lFact = parseFloat(item.litros_factura); 
+                    const lReal = parseFloat(item.litros_reales); 
+                    const diff = lReal - lFact;
+                    let diffClass = "text-slate-400"; 
+                    if(diff > 0) diffClass = "text-emerald-600 font-bold"; 
+                    if(diff < 0) diffClass = "text-rose-600 font-bold";    
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap"><div class="font-bold text-slate-700">${item.fecha}</div><div class="text-xs text-slate-500">${item.hora}</div></td>
+                        <td class="px-6 py-4 whitespace-nowrap"><span class="px-2 py-1 text-xs font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">${item.base}</span></td>
+                        <td class="px-6 py-4"><div class="text-sm font-bold text-slate-700">${item.proveedor}</div><div class="text-xs text-indigo-500 font-mono">#${item.folio}</div></td>
+                        <td class="px-6 py-4 text-right font-mono text-slate-600">${lFact.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                        <td class="px-6 py-4 text-right font-mono font-bold text-indigo-700 bg-indigo-50/30 rounded">${lReal.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                        <td class="px-6 py-4 text-right font-mono ${diffClass}">${diff > 0 ? '+' : ''}${diff.toLocaleString('es-MX', {minimumFractionDigits:2})}</td>
+                    `;
+                });
+            } catch (err) { 
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center p-8 text-rose-500">Error.</td></tr>'; 
+            }
+        }
+    </script>
+</body>
+</html>
